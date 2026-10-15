@@ -55,4 +55,3 @@ def evaluate_fetch_window(
         "last_fetch": last_fetch.isoformat(),
         "gap_hours": round((now - last_fetch).total_seconds() / 3600, 1),
     }
-

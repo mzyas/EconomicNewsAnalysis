@@ -26,7 +26,6 @@ from tools.config_loader import ROOT, load_runtime_config
 from tools.graph.workflow import run_workflow
 from tools.schema_validation import validate_file
 
-
 MODES = {"analyze", "fetch", "briefing", "deliver", "check", "list-sources", "trend"}
 
 
@@ -54,15 +53,9 @@ def _project_to_old_schema(state: dict[str, Any]) -> dict[str, Any]:
     ensuring all required fields are present.
     """
     schema_path = ROOT / "schemas" / "runtime_result.schema.json"
-    allowed = set(
-        json.loads(schema_path.read_text(encoding="utf-8"))
-        .get("properties", {})
-        .keys()
-    )
+    allowed = set(json.loads(schema_path.read_text(encoding="utf-8")).get("properties", {}).keys())
     return {
-        key: value
-        for key, value in state.items()
-        if not key.startswith("_") and key in allowed
+        key: value for key, value in state.items() if not key.startswith("_") and key in allowed
     }
 
 
@@ -229,7 +222,10 @@ def main() -> int:
             validate_file(error, ROOT / "schemas" / "runtime_result.schema.json")
             print(json.dumps(error, ensure_ascii=False, indent=2), file=sys.stderr)
         except Exception:
-            print(json.dumps({"status": "failed", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+            print(
+                json.dumps({"status": "failed", "error": str(exc)}, ensure_ascii=False),
+                file=sys.stderr,
+            )
         return 1
 
     if config.get("output_format") == "markdown" and (

@@ -34,14 +34,28 @@ def _freshness_label(published_at: Any, now: datetime | None = None) -> str:
 SEPARATOR = "*********************"
 SUMMARY_LIMIT = 180
 REGION_LABELS = {
-    "US": "美国", "JP": "日本", "CN": "中国", "Eurozone": "欧元区",
-    "Global": "全球", "Japan": "日本", "China": "中国", "global": "全球",
-    "UK": "英国", "United Kingdom": "英国", "EU": "欧盟",
+    "US": "美国",
+    "JP": "日本",
+    "CN": "中国",
+    "Eurozone": "欧元区",
+    "Global": "全球",
+    "Japan": "日本",
+    "China": "中国",
+    "global": "全球",
+    "UK": "英国",
+    "United Kingdom": "英国",
+    "EU": "欧盟",
 }
 TOPIC_LABELS = {
-    "monetary_policy": "货币政策", "inflation": "通胀", "employment": "就业",
-    "gdp_growth": "经济增长", "fiscal_policy": "财政政策", "trade": "贸易",
-    "fx": "汇率", "energy": "能源", "geopolitics": "地缘政治",
+    "monetary_policy": "货币政策",
+    "inflation": "通胀",
+    "employment": "就业",
+    "gdp_growth": "经济增长",
+    "fiscal_policy": "财政政策",
+    "trade": "贸易",
+    "fx": "汇率",
+    "energy": "能源",
+    "geopolitics": "地缘政治",
     "macro_news": "宏观经济",
 }
 
@@ -60,9 +74,9 @@ def _truncate(value: str) -> str:
 
 def _is_google_news_item(item: dict[str, Any]) -> bool:
     discovery = item.get("discovery", {})
-    return (
-        isinstance(discovery, dict) and discovery.get("channel") == "google_news"
-    ) or str(item.get("source", {}).get("id", "")).startswith("google_news_")
+    return (isinstance(discovery, dict) and discovery.get("channel") == "google_news") or str(
+        item.get("source", {}).get("id", "")
+    ).startswith("google_news_")
 
 
 def _item_category(item: dict[str, Any]) -> str:
@@ -105,16 +119,21 @@ _HOT_EXCLUDE_PATTERNS = (
 
 def _is_finance_or_tech(item: dict[str, Any]) -> bool:
     """True when a (hot) item is clearly finance/tech/AI and should be excluded."""
-    blob = " ".join([
-        str(item.get("title", "")),
-        str(item.get("summary", "")),
-        " ".join(str(tag) for tag in item.get("tags", [])),
-    ])
+    blob = " ".join(
+        [
+            str(item.get("title", "")),
+            str(item.get("summary", "")),
+            " ".join(str(tag) for tag in item.get("tags", [])),
+        ]
+    )
     return any(re.search(pattern, blob) for pattern in _HOT_EXCLUDE_PATTERNS)
 
 
 def _is_verified_google_item(item: dict[str, Any]) -> bool:
-    return _is_google_news_item(item) and item.get("discovery", {}).get("verification_status") == "verified"
+    return (
+        _is_google_news_item(item)
+        and item.get("discovery", {}).get("verification_status") == "verified"
+    )
 
 
 def _title(item: dict[str, Any], analysis: dict[str, Any]) -> str:
@@ -169,7 +188,10 @@ def _row(item: dict[str, Any], analysis: dict[str, Any]) -> dict[str, str]:
             signal = "；".join(t for t in texts if t) or "待基于已核验来源补充。"
         else:
             signal = "待基于已核验来源补充。"
-        assets = "、".join(_table_text(value) for value in analysis.get("focus_assets", []) if value) or "综合市场"
+        assets = (
+            "、".join(_table_text(value) for value in analysis.get("focus_assets", []) if value)
+            or "综合市场"
+        )
     return {
         "importance": _importance(float(item.get("relevance_score", 0))),
         "region": _region(item),
@@ -185,12 +207,15 @@ def _row(item: dict[str, Any], analysis: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def _mainlines(items: list[dict[str, Any]], analyses: dict[str, dict[str, Any]], daily_mainlines: list[dict[str, Any]] | None = None) -> list[str]:
+def _mainlines(
+    items: list[dict[str, Any]],
+    analyses: dict[str, dict[str, Any]],
+    daily_mainlines: list[dict[str, Any]] | None = None,
+) -> list[str]:
     if daily_mainlines:
         return [str(item["headline"]) for item in daily_mainlines]
     candidates = [
-        item for item in items
-        if not _is_google_news_item(item) or _is_verified_google_item(item)
+        item for item in items if not _is_google_news_item(item) or _is_verified_google_item(item)
     ][:5]
     groups: dict[tuple[str, str], dict[str, Any]] = {}
     for item in candidates:
@@ -202,7 +227,9 @@ def _mainlines(items: list[dict[str, Any]], analyses: dict[str, dict[str, Any]],
         group["score"] += float(item.get("relevance_score", 0))
         group["items"].append(item)
     lines: list[str] = []
-    for (region, topic), group in sorted(groups.items(), key=lambda entry: entry[1]["score"], reverse=True):
+    for (region, topic), group in sorted(
+        groups.items(), key=lambda entry: entry[1]["score"], reverse=True
+    ):
         representative = max(group["items"], key=lambda item: float(item.get("relevance_score", 0)))
         title = _title(representative, analyses.get(str(representative.get("id")), {}))
         suffix = f"（等 {len(group['items'])} 条）" if len(group["items"]) > 1 else ""
@@ -301,7 +328,9 @@ def _macro_background(
 
 
 def build_daily_briefing_model(
-    items: list[dict[str, Any]], analyses: list[dict[str, Any]], report_date: str | None = None,
+    items: list[dict[str, Any]],
+    analyses: list[dict[str, Any]],
+    report_date: str | None = None,
     daily_mainlines: list[dict[str, Any]] | None = None,
     daily_weekly_watchlist: list[str] | None = None,
     daily_macro_background: dict[str, str] | None = None,
@@ -313,10 +342,7 @@ def build_daily_briefing_model(
     tech_items = [r for r in rows if _item_category(r[0]) == "tech"]
     google_items = [r for r in rows if _item_category(r[0]) == "google"]
     # 热点只保留「财经/科技/AI 以外」的高热条目。
-    hot_items = [
-        r for r in rows
-        if _item_category(r[0]) == "hot" and not _is_finance_or_tech(r[0])
-    ]
+    hot_items = [r for r in rows if _item_category(r[0]) == "hot" and not _is_finance_or_tech(r[0])]
     mover_rows = []
     for item, analysis in (r for r in rows if _item_category(r[0]) == "movers"):
         row = _row(item, analysis)
@@ -339,14 +365,19 @@ def build_daily_briefing_model(
 
 
 def _markdown_table(rows: list[dict[str, str]]) -> list[str]:
-    lines = ["| 重要性 | 地区 | 主题 | 新闻内容 | 核心信号 | 关注资产 |", "|---|---|---|---|---|---|"]
+    lines = [
+        "| 重要性 | 地区 | 主题 | 新闻内容 | 核心信号 | 关注资产 |",
+        "|---|---|---|---|---|---|",
+    ]
     for row in rows:
         title = row["title"]
         page_link = f"[{row['link_label']}]({row['url']})" if row["url"] else ""
         source = f"来源：{row['source']}" + (f" {page_link}" if page_link else "")
         freshness = f"；🕒 {row['freshness']}" if row.get("freshness") else ""
         content = f"**{title}**；{row['detail']}；{source}{freshness}"
-        lines.append(f"| {row['importance']} | {row['region']} | {row['topic']} | {content} | {row['signal']} | {row['assets']} |")
+        lines.append(
+            f"| {row['importance']} | {row['region']} | {row['topic']} | {content} | {row['signal']} | {row['assets']} |"
+        )
     return lines
 
 
@@ -368,12 +399,26 @@ def _market_impact_lines(market_impact: dict[str, str] | None) -> list[str]:
     ]
 
 
-def build_daily_briefing(items: list[dict[str, Any]], analyses: list[dict[str, Any]], report_date: str | None = None, market_impact: dict[str, str] | None = None, daily_mainlines: list[dict[str, Any]] | None = None, daily_weekly_watchlist: list[str] | None = None, daily_macro_background: dict[str, str] | None = None) -> str:
-    model = build_daily_briefing_model(items, analyses, report_date, daily_mainlines, daily_weekly_watchlist, daily_macro_background)
+def build_daily_briefing(
+    items: list[dict[str, Any]],
+    analyses: list[dict[str, Any]],
+    report_date: str | None = None,
+    market_impact: dict[str, str] | None = None,
+    daily_mainlines: list[dict[str, Any]] | None = None,
+    daily_weekly_watchlist: list[str] | None = None,
+    daily_macro_background: dict[str, str] | None = None,
+) -> str:
+    model = build_daily_briefing_model(
+        items,
+        analyses,
+        report_date,
+        daily_mainlines,
+        daily_weekly_watchlist,
+        daily_macro_background,
+    )
     lines = ["今日资讯主线"]
     lines.extend(
-        f"{index}. {_markdown_mainline(line)}"
-        for index, line in enumerate(model["mainlines"], 1)
+        f"{index}. {_markdown_mainline(line)}" for index, line in enumerate(model["mainlines"], 1)
     )
     if not model["mainlines"]:
         lines.append("1. 暂无可核验的高优先级宏观主题。")
@@ -392,13 +437,24 @@ def build_daily_briefing(items: list[dict[str, Any]], analyses: list[dict[str, A
     lines += ["", "", "🔥 热点速览"]
     lines += _markdown_table(model["hot"]) if model["hot"] else ["暂无热点新闻。"]
     lines += [
-        "", SEPARATOR, "", "市场影响地图",
+        "",
+        SEPARATOR,
+        "",
+        "市场影响地图",
         *_market_impact_lines(market_impact),
-        "", SEPARATOR, "", "需要确认的官方数据",
+        "",
+        SEPARATOR,
+        "",
+        "需要确认的官方数据",
         "- 对新闻中的关键数字、政策措辞和发布时间进行官方来源复核。",
-        "", SEPARATOR, "", "本周观察指标",
+        "",
+        SEPARATOR,
+        "",
+        "本周观察指标",
         *[f"- {line}" for line in model["weekly_watchlist"]],
-        "", "免责声明", "这不是投资建议，仅用于新闻理解和宏观分析。",
+        "",
+        "免责声明",
+        "这不是投资建议，仅用于新闻理解和宏观分析。",
     ]
     return "\n".join(lines)
 
@@ -413,15 +469,29 @@ def _html_table(rows: list[dict[str, str]]) -> str:
     aligns = ["center", "center", "left", "left", "left"]
     header = "".join(
         f'<th style="{cell}width:{width};background:#f6f8fa;text-align:{align}">{label}</th>'
-        for width, align, label in zip(widths, aligns, ["重要性", "主题", "新闻内容", "核心信号", "关注资产"])
+        for width, align, label in zip(
+            widths, aligns, ["重要性", "主题", "新闻内容", "核心信号", "关注资产"], strict=True
+        )
     )
     body: list[str] = []
     for row in rows:
         title = escape(row["title"])
-        page_link = f' <a href="{escape(row["url"], quote=True)}" style="color:#57606a;text-decoration:underline">{escape(row["link_label"])}</a>' if row["url"] else ""
-        freshness = f'；<span style="color:#999;font-size:11px">🕒 {escape(row["freshness"])}</span>' if row.get("freshness") else ""
-        content = f"<strong>{title}</strong>；<span style=\"color:#57606a\">来源：{escape(row['source'])}</span>{page_link}{freshness}"
-        topic = f"{escape(row['region'])}<br>{escape(row['topic'])}" if row["region"] else escape(row["topic"])
+        page_link = (
+            f' <a href="{escape(row["url"], quote=True)}" style="color:#57606a;text-decoration:underline">{escape(row["link_label"])}</a>'
+            if row["url"]
+            else ""
+        )
+        freshness = (
+            f'；<span style="color:#999;font-size:11px">🕒 {escape(row["freshness"])}</span>'
+            if row.get("freshness")
+            else ""
+        )
+        content = f'<strong>{title}</strong>；<span style="color:#57606a">来源：{escape(row["source"])}</span>{page_link}{freshness}'
+        topic = (
+            f"{escape(row['region'])}<br>{escape(row['topic'])}"
+            if row["region"]
+            else escape(row["topic"])
+        )
         assets = "<br>".join(escape(asset) for asset in row["assets"].split("、"))
         values = [
             escape(_importance_label(row["importance"])),
@@ -441,21 +511,42 @@ def _html_table(rows: list[dict[str, str]]) -> str:
     return f'<table role="presentation" style="{style}"><thead><tr>{header}</tr></thead><tbody>{"".join(body)}</tbody></table>'
 
 
-def build_daily_briefing_html(items: list[dict[str, Any]], analyses: list[dict[str, Any]], report_date: str | None = None, market_impact: dict[str, str] | None = None, daily_mainlines: list[dict[str, Any]] | None = None, daily_weekly_watchlist: list[str] | None = None, daily_macro_background: dict[str, str] | None = None) -> str:
-    model = build_daily_briefing_model(items, analyses, report_date, daily_mainlines, daily_weekly_watchlist, daily_macro_background)
-    mainlines = "".join(
-        f"<li>{_html_mainline(line)}</li>" for line in model["mainlines"]
-    ) or "<li>暂无可核验的高优先级宏观主题。</li>"
-    macro_html = "".join(
-        f"<li><strong>{escape(label)}：</strong>{escape(text)}</li>"
-        for label, text in model["macro_background"]
-    ) or "<li>暂无最新官方动态。</li>"
+def build_daily_briefing_html(
+    items: list[dict[str, Any]],
+    analyses: list[dict[str, Any]],
+    report_date: str | None = None,
+    market_impact: dict[str, str] | None = None,
+    daily_mainlines: list[dict[str, Any]] | None = None,
+    daily_weekly_watchlist: list[str] | None = None,
+    daily_macro_background: dict[str, str] | None = None,
+) -> str:
+    model = build_daily_briefing_model(
+        items,
+        analyses,
+        report_date,
+        daily_mainlines,
+        daily_weekly_watchlist,
+        daily_macro_background,
+    )
+    mainlines = (
+        "".join(f"<li>{_html_mainline(line)}</li>" for line in model["mainlines"])
+        or "<li>暂无可核验的高优先级宏观主题。</li>"
+    )
+    macro_html = (
+        "".join(
+            f"<li><strong>{escape(label)}：</strong>{escape(text)}</li>"
+            for label, text in model["macro_background"]
+        )
+        or "<li>暂无最新官方动态。</li>"
+    )
     media = _html_table(model["media"]) if model["media"] else "<p>暂无财经媒体新闻。</p>"
     tech = _html_table(model["tech"]) if model["tech"] else "<p>暂无科技与AI新闻。</p>"
     google = _html_table(model["google"]) if model["google"] else "<p>暂无 Google News 快讯。</p>"
     hot = _html_table(model["hot"]) if model["hot"] else "<p>暂无热点新闻。</p>"
     movers = f"<h2>📉 异动解读</h2>{_html_table(model['movers'])}\n" if model["movers"] else ""
-    impact_html = "".join(f"<li>{escape(line[2:])}</li>" for line in _market_impact_lines(market_impact))
+    impact_html = "".join(
+        f"<li>{escape(line[2:])}</li>" for line in _market_impact_lines(market_impact)
+    )
     watchlist_html = "".join(f"<li>{escape(line)}</li>" for line in model["weekly_watchlist"])
     return f"""<h2>今日资讯主线</h2><ol>{mainlines}</ol>
 {movers}<hr><h2>🌏 官媒宏观背景（中美日）</h2><ul>{macro_html}</ul>

@@ -83,10 +83,7 @@ def prune_checkpoints(
     conn = sqlite3.connect(checkpoint_path)
     try:
         existing = {
-            row[0]
-            for row in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            )
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
         if "checkpoints" not in existing:
             return summary

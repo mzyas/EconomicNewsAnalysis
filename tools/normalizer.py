@@ -18,7 +18,7 @@ def normalize_news_item(item: dict[str, Any]) -> dict[str, Any]:
     summary = _text(item.get("summary") or item.get("description"))
     item_id = _text(item.get("item_hash") or item.get("id"))
     if not item_id:
-        item_id = hashlib.sha256(f"{title}\n{link}".encode("utf-8")).hexdigest()[:16]
+        item_id = hashlib.sha256(f"{title}\n{link}".encode()).hexdigest()[:16]
 
     tags = item.get("source_tags") or item.get("tags") or []
     if isinstance(tags, str):
@@ -43,8 +43,7 @@ def normalize_news_item(item: dict[str, Any]) -> dict[str, Any]:
         "url": link,
         "summary": summary,
         "published_at": _text(item.get("published") or item.get("published_at")),
-        "fetched_at": _text(item.get("fetched_at"))
-        or datetime.now(timezone.utc).isoformat(),
+        "fetched_at": _text(item.get("fetched_at")) or datetime.now(timezone.utc).isoformat(),
         "source": {
             "id": source_id,
             "name": _text(item.get("source_name") or item.get("source")),

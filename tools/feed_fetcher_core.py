@@ -21,18 +21,17 @@ import hashlib
 import json
 import sys
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone, timedelta
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
-
 # ── data model ──────────────────────────────────────────────────────────────
+
 
 @dataclass
 class Source:
@@ -65,6 +64,7 @@ class FeedItem:
 
 # ── config loader ───────────────────────────────────────────────────────────
 
+
 def load_config(path: Path) -> list[Source]:
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -72,6 +72,7 @@ def load_config(path: Path) -> list[Source]:
 
 
 # ── RSS / Atom parser (stdlib only) ─────────────────────────────────────────
+
 
 def _find_text(el: ET.Element, tag: str, ns: str = "") -> str:
     """Find text in element, trying with and without namespace."""
@@ -105,11 +106,11 @@ def _get_link(el: ET.Element) -> str:
 def _parse_pubdate(raw: str) -> str:
     """Try to parse various date formats and return ISO 8601."""
     formats = [
-        "%a, %d %b %Y %H:%M:%S %z",   # RFC 2822
+        "%a, %d %b %Y %H:%M:%S %z",  # RFC 2822
         "%a, %d %b %Y %H:%M:%S %Z",
-        "%d %b %Y %H:%M:%S %Z",        # PBoC: "4 Jun 2026 16:00:00 GMT"
+        "%d %b %Y %H:%M:%S %Z",  # PBoC: "4 Jun 2026 16:00:00 GMT"
         "%d %b %Y %H:%M:%S %z",
-        "%Y-%m-%dT%H:%M:%S%z",         # ISO 8601
+        "%Y-%m-%dT%H:%M:%S%z",  # ISO 8601
         "%Y-%m-%dT%H:%M:%SZ",
         "%Y-%m-%dT%H:%M:%S",
         "%Y-%m-%d %H:%M:%S",
@@ -129,16 +130,18 @@ def _parse_pubdate(raw: str) -> str:
 def _clean_html(raw: str) -> str:
     """Strip basic HTML tags."""
     import re
+
     clean = re.sub(r"<[^>]+>", " ", raw)
     clean = re.sub(r"\s+", " ", clean)
     return clean.strip()
 
 
-def fetch_rss(source: Source, max_items: int, connect_timeout: int, read_timeout: int) -> tuple[list[FeedItem], str | None]:
+def fetch_rss(
+    source: Source, max_items: int, connect_timeout: int, read_timeout: int
+) -> tuple[list[FeedItem], str | None]:
     """Fetch and parse an RSS/Atom feed. Returns (items, error)."""
     req = urllib.request.Request(
-        source.url,
-        headers={"User-Agent": "Hermes-Economic-News-Fetcher/1.0"}
+        source.url, headers={"User-Agent": "Hermes-Economic-News-Fetcher/1.0"}
     )
     try:
         with urllib.request.urlopen(req, timeout=connect_timeout) as resp:
@@ -149,7 +152,7 @@ def fetch_rss(source: Source, max_items: int, connect_timeout: int, read_timeout
                 pass
             raw = resp.read()
             # Decompress gzip by magic bytes (more reliable than Content-Encoding header)
-            if raw[:2] == b'\x1f\x8b':
+            if raw[:2] == b"\x1f\x8b":
                 raw = gzip.decompress(raw)
     except urllib.error.HTTPError as e:
         return [], f"HTTP {e.code}"
@@ -163,10 +166,6 @@ def fetch_rss(source: Source, max_items: int, connect_timeout: int, read_timeout
     except ET.ParseError as e:
         return [], f"XML parse error: {e}"
 
-    # Detect namespace
-    ns = ""
-    if root.tag.startswith("{"):
-        ns = root.tag.split("}")[0] + "}"
     atom_ns = "http://www.w3.org/2005/Atom"
 
     # Find items/entries
@@ -194,13 +193,17 @@ def fetch_rss(source: Source, max_items: int, connect_timeout: int, read_timeout
             break
         title = _find_text(el, "title", atom_ns)
         link = _get_link(el)
-        summary = (_find_text(el, "description") or
-                   _find_text(el, "summary", atom_ns) or
-                   _find_text(el, "content", atom_ns))
-        published_raw = (_find_text(el, "pubDate") or
-                         _find_text(el, "pubTime") or
-                         _find_text(el, "published", atom_ns) or
-                         _find_text(el, "updated", atom_ns))
+        summary = (
+            _find_text(el, "description")
+            or _find_text(el, "summary", atom_ns)
+            or _find_text(el, "content", atom_ns)
+        )
+        published_raw = (
+            _find_text(el, "pubDate")
+            or _find_text(el, "pubTime")
+            or _find_text(el, "published", atom_ns)
+            or _find_text(el, "updated", atom_ns)
+        )
         published = _parse_pubdate(published_raw) if published_raw else ""
         summary_clean = _clean_html(summary)
 
@@ -211,24 +214,24 @@ def fetch_rss(source: Source, max_items: int, connect_timeout: int, read_timeout
         if link and link.startswith("www."):
             link = "https://" + link
 
-        item_hash = hashlib.md5(
-            (title + (link or "")).encode()
-        ).hexdigest()[:12]
+        item_hash = hashlib.md5((title + (link or "")).encode()).hexdigest()[:12]
 
-        items.append(FeedItem(
-            source_id=source.id,
-            source_name=source.name,
-            title=title,
-            link=link,
-            summary=summary_clean,
-            published=published,
-            fetched_at=now,
-            item_hash=item_hash,
-            source_tags=source.tags,
-            source_country=source.country or source.region,
-            source_language=source.language,
-            source_category=source.category,
-        ))
+        items.append(
+            FeedItem(
+                source_id=source.id,
+                source_name=source.name,
+                title=title,
+                link=link,
+                summary=summary_clean,
+                published=published,
+                fetched_at=now,
+                item_hash=item_hash,
+                source_tags=source.tags,
+                source_country=source.country or source.region,
+                source_language=source.language,
+                source_category=source.category,
+            )
+        )
         count += 1
 
     return items, None
@@ -236,14 +239,16 @@ def fetch_rss(source: Source, max_items: int, connect_timeout: int, read_timeout
 
 # ── World Bank JSON API fetcher ─────────────────────────────────────────────
 
-def fetch_worldbank_api(source: Source, max_items: int, connect_timeout: int, read_timeout: int) -> tuple[list[FeedItem], str | None]:
+
+def fetch_worldbank_api(
+    source: Source, max_items: int, connect_timeout: int, read_timeout: int
+) -> tuple[list[FeedItem], str | None]:
     """Fetch World Bank news via search API JSON, convert to FeedItems."""
     import re
 
     api_url = f"{source.url}?format=json&rows={max(max_items * 5, 30)}&order=desc&qdr=w"
     req = urllib.request.Request(
-        api_url,
-        headers={"User-Agent": "Hermes-Economic-News-Fetcher/1.0"}
+        api_url, headers={"User-Agent": "Hermes-Economic-News-Fetcher/1.0"}
     )
     try:
         with urllib.request.urlopen(req, timeout=connect_timeout) as resp:
@@ -252,7 +257,7 @@ def fetch_worldbank_api(source: Source, max_items: int, connect_timeout: int, re
             except AttributeError:
                 pass
             raw = resp.read()
-            if raw[:2] == b'\x1f\x8b':
+            if raw[:2] == b"\x1f\x8b":
                 raw = gzip.decompress(raw)
             data = json.loads(raw)
     except urllib.error.HTTPError as e:
@@ -266,7 +271,7 @@ def fetch_worldbank_api(source: Source, max_items: int, connect_timeout: int, re
     items: list[FeedItem] = []
     count = 0
 
-    for key, doc in data.get("documents", {}).items():
+    for doc in data.get("documents", {}).values():
         if count >= max_items:
             break
 
@@ -286,36 +291,37 @@ def fetch_worldbank_api(source: Source, max_items: int, connect_timeout: int, re
             continue
 
         # Extract date from URL: /news/press-release/2026/06/05/...
-        date_match = re.search(r'/news/[\w-]+/(\d{4}/\d{2}/\d{2})/', url)
+        date_match = re.search(r"/news/[\w-]+/(\d{4}/\d{2}/\d{2})/", url)
         if date_match:
             published = date_match.group(1).replace("/", "-")
         else:
             published = ""
 
-        item_hash = hashlib.md5(
-            (title + url).encode()
-        ).hexdigest()[:12]
+        item_hash = hashlib.md5((title + url).encode()).hexdigest()[:12]
 
-        items.append(FeedItem(
-            source_id=source.id,
-            source_name=source.name,
-            title=title,
-            link=url,
-            summary="",
-            published=published,
-            fetched_at=now,
-            item_hash=item_hash,
-            source_tags=source.tags,
-            source_country=source.country or source.region or "Global",
-            source_language=source.language,
-            source_category=source.category,
-        ))
+        items.append(
+            FeedItem(
+                source_id=source.id,
+                source_name=source.name,
+                title=title,
+                link=url,
+                summary="",
+                published=published,
+                fetched_at=now,
+                item_hash=item_hash,
+                source_tags=source.tags,
+                source_country=source.country or source.region or "Global",
+                source_language=source.language,
+                source_category=source.category,
+            )
+        )
         count += 1
 
     return items, None
 
 
 # ── main fetch loop ─────────────────────────────────────────────────────────
+
 
 def fetch_all(
     sources: list[Source],
@@ -341,12 +347,14 @@ def fetch_all(
 
     for src in sources:
         if src.type in skip_types:
-            results["skipped"].append({
-                "id": src.id,
-                "name": src.name,
-                "type": src.type,
-                "reason": f"Source type '{src.type}' not fetched automatically (use web_extract for official pages, API calls for APIs)."
-            })
+            results["skipped"].append(
+                {
+                    "id": src.id,
+                    "name": src.name,
+                    "type": src.type,
+                    "reason": f"Source type '{src.type}' not fetched automatically (use web_extract for official pages, API calls for APIs).",
+                }
+            )
             results["sources_skipped"] += 1
             continue
 
@@ -390,6 +398,7 @@ def list_sources(sources: list[Source]) -> None:
 
 # ── CLI ─────────────────────────────────────────────────────────────────────
 
+
 def main() -> int:
     default_config = Path(__file__).resolve().parent.parent / "sources" / "rss_sources.yaml"
 
@@ -397,52 +406,51 @@ def main() -> int:
         description="Fetch economic news from configured RSS/data sources"
     )
     parser.add_argument(
-        "--source", type=Path, default=default_config,
-        help="Path to rss_sources.yaml"
+        "--source", type=Path, default=default_config, help="Path to rss_sources.yaml"
     )
     parser.add_argument(
-        "--output", type=Path,
-        help="Output JSON file path (default: print to stdout)"
+        "--output", type=Path, help="Output JSON file path (default: print to stdout)"
     )
     parser.add_argument(
-        "--max-per-source", type=int, default=10,
-        help="Max items to return per source (default: 10)"
+        "--max-per-source",
+        type=int,
+        default=10,
+        help="Max items to return per source (default: 10)",
     )
     parser.add_argument(
-        "--connect-timeout", type=int, default=10,
-        help="Connect timeout per source in seconds (default: 10)"
+        "--connect-timeout",
+        type=int,
+        default=10,
+        help="Connect timeout per source in seconds (default: 10)",
     )
     parser.add_argument(
-        "--read-timeout", type=int, default=40,
-        help="Read timeout per source in seconds (default: 40)"
+        "--read-timeout",
+        type=int,
+        default=40,
+        help="Read timeout per source in seconds (default: 40)",
     )
     parser.add_argument(
-        "--country", type=str,
-        help="Comma-separated country/region filter (e.g. JP,US,CN)"
+        "--country", type=str, help="Comma-separated country/region filter (e.g. JP,US,CN)"
     )
     parser.add_argument(
-        "--tags", type=str,
-        help="Comma-separated tag filter (e.g. inflation,boj,jpy)"
+        "--tags", type=str, help="Comma-separated tag filter (e.g. inflation,boj,jpy)"
     )
     parser.add_argument(
-        "--language", type=str,
-        help="Comma-separated language filter (e.g. en,zh,ja)"
+        "--language", type=str, help="Comma-separated language filter (e.g. en,zh,ja)"
     )
     parser.add_argument(
-        "--include-official", action="store_true",
-        help="Also attempt to fetch official_page sources (may fail, they are not RSS)"
+        "--include-official",
+        action="store_true",
+        help="Also attempt to fetch official_page sources (may fail, they are not RSS)",
+    )
+    parser.add_argument("--list", action="store_true", help="List all sources without fetching")
+    parser.add_argument(
+        "--compact",
+        action="store_true",
+        help="Compact output: only title, source_name, link, published, summary",
     )
     parser.add_argument(
-        "--list", action="store_true",
-        help="List all sources without fetching"
-    )
-    parser.add_argument(
-        "--compact", action="store_true",
-        help="Compact output: only title, source_name, link, published, summary"
-    )
-    parser.add_argument(
-        "--log", type=Path,
-        help="Log fetch result to JSONL file for tracking fetch history"
+        "--log", type=Path, help="Log fetch result to JSONL file for tracking fetch history"
     )
     args = parser.parse_args()
 
@@ -456,17 +464,13 @@ def main() -> int:
     if args.country:
         countries = {c.strip().upper() for c in args.country.split(",")}
         sources = [
-            s for s in sources
-            if (s.country.upper() in countries or s.region.upper() in countries)
+            s for s in sources if (s.country.upper() in countries or s.region.upper() in countries)
         ]
     if args.tags:
         tag_set = {t.strip().lower() for t in args.tags.split(",")}
-        sources = [
-            s for s in sources
-            if tag_set & {t.lower() for t in s.tags}
-        ]
+        sources = [s for s in sources if tag_set & {t.lower() for t in s.tags}]
     if args.language:
-        langs = {l.strip().lower() for l in args.language.split(",")}
+        langs = {lang.strip().lower() for lang in args.language.split(",")}
         sources = [s for s in sources if s.language in langs]
 
     if args.list:
@@ -485,11 +489,13 @@ def main() -> int:
     if args.compact:
         compact = []
         for item in results["items"]:
-            compact.append({
-                k: item[k]
-                for k in ["title", "source_name", "link", "published", "summary"]
-                if k in item
-            })
+            compact.append(
+                {
+                    k: item[k]
+                    for k in ["title", "source_name", "link", "published", "summary"]
+                    if k in item
+                }
+            )
         results["items"] = compact
 
     output = json.dumps(results, ensure_ascii=False, indent=2)

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import tempfile
 import subprocess
+import tempfile
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from collections.abc import Sequence
 from typing import Any
 
 from .email_render import build_mml

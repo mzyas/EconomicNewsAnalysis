@@ -24,9 +24,7 @@ class AnalysisBriefingTests(unittest.TestCase):
         self.assertEqual(analysis["facts"], [])
         self.assertEqual(analysis["signals"], [])
         self.assertEqual(analysis["impact_path"], [])
-        self.assertTrue(
-            all(value == "" for value in analysis["asset_impact"].values())
-        )
+        self.assertTrue(all(value == "" for value in analysis["asset_impact"].values()))
         self.assertEqual(
             analysis["source_context"]["summary"],
             "Officials need more evidence before easing.",
@@ -174,9 +172,7 @@ class AnalysisBriefingTests(unittest.TestCase):
             analysis["grounding_status"],
             "insufficient_source_context",
         )
-        self.assertTrue(
-            any("非实质信息" in item for item in analysis["draft_limitations"])
-        )
+        self.assertTrue(any("非实质信息" in item for item in analysis["draft_limitations"]))
 
     def test_briefing_preserves_full_source_summary(self):
         long_summary = "A" * 1200
@@ -201,11 +197,18 @@ class AnalysisBriefingTests(unittest.TestCase):
         items = []
         analyses = []
         for index, score in enumerate([0.9, 0.8, 0.7, 0.6, 0.5, 0.4], 1):
-            item = score_item(normalize_news_item({
-                "title": f"US CPI update {index}", "summary": "Verified summary.",
-                "source_country": "US", "source_name": "Example", "url": f"https://example.com/{index}",
-                "source_category": "news_media",
-            }))
+            item = score_item(
+                normalize_news_item(
+                    {
+                        "title": f"US CPI update {index}",
+                        "summary": "Verified summary.",
+                        "source_country": "US",
+                        "source_name": "Example",
+                        "url": f"https://example.com/{index}",
+                        "source_category": "news_media",
+                    }
+                )
+            )
             item["relevance_score"] = score
             items.append(item)
             analysis = analyze_item(item)
@@ -218,33 +221,45 @@ class AnalysisBriefingTests(unittest.TestCase):
         self.assertIn("table-layout:fixed", html)
         self.assertIn("overflow-wrap:anywhere", html)
         self.assertIn('href="https://example.com/1"', html)
-        self.assertNotIn('>US CPI update 1</a>', html)
+        self.assertNotIn(">US CPI update 1</a>", html)
         self.assertNotIn("<br>", report)
 
     def test_daily_mainline_and_news_content_presentation(self):
-        item = score_item(normalize_news_item({
-            "title": "中国5月经济数据发布",
-            "summary": "工业增长加速而消费承压，房地产投资仍是固定资产投资的主要拖累。",
-            "source_country": "CN",
-            "source_name": "国家统计局",
-            "url": "https://www.stats.gov.cn/example",
-            "source_category": "news_media",
-        }))
+        item = score_item(
+            normalize_news_item(
+                {
+                    "title": "中国5月经济数据发布",
+                    "summary": "工业增长加速而消费承压，房地产投资仍是固定资产投资的主要拖累。",
+                    "source_country": "CN",
+                    "source_name": "国家统计局",
+                    "url": "https://www.stats.gov.cn/example",
+                    "source_category": "news_media",
+                }
+            )
+        )
         analysis = analyze_item(item)
         headline = "中国5月经济数据集中发布：工业加速、消费疲弱、投资分化 — 工业增长加速而消费承压，地产仍是投资拖累。"
         report = build_daily_briefing(
-            [item], [analysis], "2026-06-21",
-            daily_mainlines=[{
-                "headline": headline,
-                "supporting_item_ids": [item["id"]],
-            }],
+            [item],
+            [analysis],
+            "2026-06-21",
+            daily_mainlines=[
+                {
+                    "headline": headline,
+                    "supporting_item_ids": [item["id"]],
+                }
+            ],
         )
         html = build_daily_briefing_html(
-            [item], [analysis], "2026-06-21",
-            daily_mainlines=[{
-                "headline": headline,
-                "supporting_item_ids": [item["id"]],
-            }],
+            [item],
+            [analysis],
+            "2026-06-21",
+            daily_mainlines=[
+                {
+                    "headline": headline,
+                    "supporting_item_ids": [item["id"]],
+                }
+            ],
         )
         self.assertIn("**中国5月经济数据集中发布：工业加速、消费疲弱、投资分化** —", report)
         self.assertIn("**中国5月经济数据发布**；工业增长加速而消费承压", report)
@@ -252,20 +267,26 @@ class AnalysisBriefingTests(unittest.TestCase):
             report.index("工业增长加速而消费承压"),
             report.index("来源：国家统计局"),
         )
-        self.assertIn("<strong>中国5月经济数据集中发布：工业加速、消费疲弱、投资分化</strong> —", html)
+        self.assertIn(
+            "<strong>中国5月经济数据集中发布：工业加速、消费疲弱、投资分化</strong> —", html
+        )
         self.assertIn("<strong>中国5月经济数据发布</strong>；", html)
         self.assertNotIn("工业增长加速而消费承压，房地产投资", html)
         self.assertIn("width:46%", html)
 
     def test_html_table_uses_slim_email_layout(self):
-        item = score_item(normalize_news_item({
-            "title": "Fed holds rates",
-            "summary": "Verified summary.",
-            "source_country": "US",
-            "source_name": "Example",
-            "url": "https://example.com/fed",
-            "source_category": "news_media",
-        }))
+        item = score_item(
+            normalize_news_item(
+                {
+                    "title": "Fed holds rates",
+                    "summary": "Verified summary.",
+                    "source_country": "US",
+                    "source_name": "Example",
+                    "url": "https://example.com/fed",
+                    "source_category": "news_media",
+                }
+            )
+        )
         item["relevance_score"] = 0.9
         analysis = analyze_item(item)
         analysis["focus_assets"] = ["美国国债", "美股", "黄金"]
@@ -283,13 +304,17 @@ class AnalysisBriefingTests(unittest.TestCase):
         names = {"CN": "PBoC", "US": "Federal Reserve", "JP": "BOJ"}
 
         def official(country, title):
-            item = score_item(normalize_news_item({
-                "title": title,
-                "summary": f"{title} summary.",
-                "source_id": ids[country],
-                "source_name": names[country],
-                "source_country": country,
-            }))
+            item = score_item(
+                normalize_news_item(
+                    {
+                        "title": title,
+                        "summary": f"{title} summary.",
+                        "source_id": ids[country],
+                        "source_name": names[country],
+                        "source_country": country,
+                    }
+                )
+            )
             return item, analyze_item(item)
 
         cn, cn_a = official("CN", "PBoC monetary update")
@@ -305,14 +330,23 @@ class AnalysisBriefingTests(unittest.TestCase):
         self.assertNotIn("| ★", macro)
 
     def test_llm_macro_background_overrides_deterministic_and_keeps_three(self):
-        cn = score_item(normalize_news_item({
-            "title": "央行政策更新", "summary": "政策利率保持不变。",
-            "source_id": "pboc_rss", "source_name": "PBoC", "source_country": "CN",
-        }))
+        cn = score_item(
+            normalize_news_item(
+                {
+                    "title": "央行政策更新",
+                    "summary": "政策利率保持不变。",
+                    "source_id": "pboc_rss",
+                    "source_name": "PBoC",
+                    "source_country": "CN",
+                }
+            )
+        )
         # LLM supplies CN + US narrative but omits JP; the briefing must still
         # render all three segments, filling JP with the neutral placeholder.
         report = build_daily_briefing(
-            [cn], [analyze_item(cn)], "2026-06-27",
+            [cn],
+            [analyze_item(cn)],
+            "2026-06-27",
             daily_macro_background={
                 "CN": "中国货币政策稳健，社融边际改善。",
                 "US": "美国通胀回落但仍偏高，美联储观望。",
@@ -326,22 +360,45 @@ class AnalysisBriefingTests(unittest.TestCase):
         self.assertNotIn("央行政策更新（PBoC）", macro)
 
     def test_tech_and_hot_boards_classify_by_source(self):
-        tech = score_item(normalize_news_item({
-            "title": "OpenAI ships a new model", "summary": "New frontier model released.",
-            "source_id": "techcrunch", "source_name": "TechCrunch", "source_country": "US",
-            "source_category": "tech_media",
-        }))
-        hot = score_item(normalize_news_item({
-            "title": "Major earthquake rattles the region", "summary": "Rescue efforts underway.",
-            "source_id": "google_news_top_en", "source_name": "Google News: Top Stories", "source_country": "Global",
-            "source_category": "hot_search", "url": "https://news.google.com/x",
-        }))
+        tech = score_item(
+            normalize_news_item(
+                {
+                    "title": "OpenAI ships a new model",
+                    "summary": "New frontier model released.",
+                    "source_id": "techcrunch",
+                    "source_name": "TechCrunch",
+                    "source_country": "US",
+                    "source_category": "tech_media",
+                }
+            )
+        )
+        hot = score_item(
+            normalize_news_item(
+                {
+                    "title": "Major earthquake rattles the region",
+                    "summary": "Rescue efforts underway.",
+                    "source_id": "google_news_top_en",
+                    "source_name": "Google News: Top Stories",
+                    "source_country": "Global",
+                    "source_category": "hot_search",
+                    "url": "https://news.google.com/x",
+                }
+            )
+        )
         # A finance/tech item from the hot feed must be excluded from 热点.
-        hot_finance = score_item(normalize_news_item({
-            "title": "Stocks rally as inflation cools", "summary": "Markets jumped on CPI data.",
-            "source_id": "google_news_top_en", "source_name": "Google News: Top Stories", "source_country": "US",
-            "source_category": "hot_search", "url": "https://news.google.com/y",
-        }))
+        hot_finance = score_item(
+            normalize_news_item(
+                {
+                    "title": "Stocks rally as inflation cools",
+                    "summary": "Markets jumped on CPI data.",
+                    "source_id": "google_news_top_en",
+                    "source_name": "Google News: Top Stories",
+                    "source_country": "US",
+                    "source_category": "hot_search",
+                    "url": "https://news.google.com/y",
+                }
+            )
+        )
         tech["translated_title"] = "OpenAI 发布新模型"
         hot["translated_title"] = "强震袭击该地区"
         report = build_daily_briefing(
@@ -358,11 +415,17 @@ class AnalysisBriefingTests(unittest.TestCase):
         self.assertNotIn("Stocks rally", report)
 
     def test_unverified_google_news_uses_discovery_link_label(self):
-        item = score_item(normalize_news_item({
-            "title": "Unverified discovery", "source_id": "google_news_test",
-            "source_name": "Google News", "source_country": "UK",
-            "url": "https://news.google.com/example",
-        }))
+        item = score_item(
+            normalize_news_item(
+                {
+                    "title": "Unverified discovery",
+                    "source_id": "google_news_test",
+                    "source_name": "Google News",
+                    "source_country": "UK",
+                    "url": "https://news.google.com/example",
+                }
+            )
+        )
         report = build_daily_briefing([item], [analyze_item(item)], "2026-06-21")
         self.assertIn("英国", report)
         self.assertIn("[Google News 发现链接](https://news.google.com/example)", report)

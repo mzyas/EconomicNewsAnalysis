@@ -14,10 +14,8 @@ Two asset types are supported:
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
 from typing import Any
-
 
 # ── Direction thresholds ────────────────────────────────────────────────
 
@@ -293,9 +291,7 @@ def render_html(
         if row.status == "failed":
             err = row.error or "数据获取失败"
             parts.append(
-                f"<tr class='failed'>"
-                f"<td>{row.name}</td><td colspan='4'>⚠ {err}</td>"
-                f"<td>—</td></tr>"
+                f"<tr class='failed'><td>{row.name}</td><td colspan='4'>⚠ {err}</td><td>—</td></tr>"
             )
             continue
 

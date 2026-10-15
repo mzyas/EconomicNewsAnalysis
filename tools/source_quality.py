@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 
-
 SUBSTANTIVE_PATTERNS = (
     r"\b(?:rate|inflation|growth|employment|wage|gdp|cpi|ppi|pce|yield|forecast|decision)\b",
     r"(?:利率|通胀|增长|就业|工资|国内生产总值|收益率|预测|决定|同比|环比)",
@@ -27,11 +26,12 @@ def assess_grounding_status(title: str, summary: str) -> str:
 
     title_compact = " ".join(str(title or "").split()).lower()
     is_boilerplate = any(
-        re.search(pattern, lowered, flags=re.IGNORECASE)
-        for pattern in BOILERPLATE_PATTERNS
+        re.search(pattern, lowered, flags=re.IGNORECASE) for pattern in BOILERPLATE_PATTERNS
     )
-    if compact.lower() == title_compact or len(compact) < 40 or (
-        len(compact) < 220 and is_boilerplate
+    if (
+        compact.lower() == title_compact
+        or len(compact) < 40
+        or (len(compact) < 220 and is_boilerplate)
     ):
         return "insufficient_source_context"
 

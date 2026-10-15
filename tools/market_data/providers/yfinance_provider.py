@@ -20,10 +20,7 @@ class YFinanceProvider:
             import yfinance as yf
         except ImportError as exc:
             detail = f"yfinance import failed: {exc}"
-            return [
-                self._failed(symbol, period, interval, detail)
-                for symbol in symbols
-            ]
+            return [self._failed(symbol, period, interval, detail) for symbol in symbols]
 
         snapshots: list[MarketSnapshot] = []
         for symbol in symbols:
@@ -35,9 +32,7 @@ class YFinanceProvider:
                     period=min_period,
                     interval=interval,
                 )
-                snapshots.append(
-                    self._snapshot_from_history(symbol, history, period, interval)
-                )
+                snapshots.append(self._snapshot_from_history(symbol, history, period, interval))
             except Exception as exc:
                 snapshots.append(self._failed(symbol, period, interval, str(exc)))
         return snapshots
@@ -188,8 +183,17 @@ def _minimum_period(requested: str, minimum: str = "3mo") -> str:
         1d, 2d, 5d, 1wk, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, max
     """
     _RANK = {
-        "1d": 1, "2d": 2, "5d": 3, "1wk": 4, "1mo": 5,
-        "3mo": 6, "6mo": 7, "1y": 8, "2y": 9, "5y": 10, "10y": 11,
+        "1d": 1,
+        "2d": 2,
+        "5d": 3,
+        "1wk": 4,
+        "1mo": 5,
+        "3mo": 6,
+        "6mo": 7,
+        "1y": 8,
+        "2y": 9,
+        "5y": 10,
+        "10y": 11,
         "max": 12,
     }
     req_rank = _RANK.get(requested, 0)

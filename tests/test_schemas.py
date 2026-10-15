@@ -1,6 +1,5 @@
 import json
 import unittest
-from pathlib import Path
 
 from tools.config_loader import ROOT, load_runtime_config
 from tools.runtime import execute
@@ -30,9 +29,7 @@ class SchemaTests(unittest.TestCase):
                 "none",
             ],
         )
-        for field in (
-            "pipeline_status", "output_status", "delivery_status", "delivery_kind"
-        ):
+        for field in ("pipeline_status", "output_status", "delivery_status", "delivery_kind"):
             self.assertIn(field, schema["required"])
 
     def test_runtime_output_validates(self):

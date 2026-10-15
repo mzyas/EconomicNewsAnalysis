@@ -1,14 +1,14 @@
 """Tests for evidence fetcher (URL -> text evidence)."""
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from tools.evidence_fetcher import (
-    fetch_evidence,
-    batch_fetch,
     MAX_RESPONSE_SIZE,
     MAX_TEXT_LENGTH,
     READ_CHUNK_SIZE,
+    batch_fetch,
+    fetch_evidence,
 )
 
 
@@ -25,10 +25,12 @@ class FetchEvidenceTests(unittest.TestCase):
     def test_http_200_returns_extracted_text(self, mock_get):
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.iter_content.return_value = [(
-            b"<html><head><title>News</title></head>"
-            b"<body><article>Federal Reserve raised rates by 25bps.</article></body></html>"
-        )]
+        mock_response.iter_content.return_value = [
+            (
+                b"<html><head><title>News</title></head>"
+                b"<body><article>Federal Reserve raised rates by 25bps.</article></body></html>"
+            )
+        ]
         mock_response.apparent_encoding = "utf-8"
         mock_get.return_value = mock_response
 
@@ -93,7 +95,7 @@ class FetchEvidenceTests(unittest.TestCase):
     @patch("tools.evidence_fetcher.requests.get")
     def test_oversized_response_truncates_and_marks_flag(self, mock_get):
         big_text = "A" * (MAX_TEXT_LENGTH + 500)
-        html = f"<html><body><p>{big_text}</p></body></html>".encode("utf-8")
+        html = f"<html><body><p>{big_text}</p></body></html>".encode()
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.iter_content.return_value = [html]

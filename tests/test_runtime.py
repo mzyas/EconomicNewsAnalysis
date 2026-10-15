@@ -88,9 +88,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_offline_briefing_and_deliver_artifacts(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            config = load_runtime_config(
-                ROOT / "examples" / "offline_briefing.yaml"
-            )
+            config = load_runtime_config(ROOT / "examples" / "offline_briefing.yaml")
             config["mode"] = "deliver"
             config["output_format"] = "json"
             config["output_dir"] = temp_dir
@@ -110,9 +108,7 @@ class RuntimeTests(unittest.TestCase):
             self.assertNotIn("mml", result["output_files"])
             self.assertEqual(result["delivery_status"], "skipped")
             self.assertEqual(result["delivery_kind"], "none")
-            saved = json.loads(
-                Path(result["output_files"]["json"]).read_text(encoding="utf-8")
-            )
+            saved = json.loads(Path(result["output_files"]["json"]).read_text(encoding="utf-8"))
             self.assertEqual(saved, result)
 
     def test_remaining_modes_dispatch_offline(self):

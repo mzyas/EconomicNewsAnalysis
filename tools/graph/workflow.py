@@ -16,15 +16,16 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from langgraph.graph import END, StateGraph
+
 from ..delivery_trace import effective_delivery_config
-
-from langgraph.graph import END, START, StateGraph
-
 from .checkpoint import (
     create_checkpoint_saver,
     load_latest_state,
     prune_checkpoints,
 )
+from .llm_runtime import clear_run_hermes_llm, set_run_hermes_llm
 from .nodes import (
     _has_valid_markdown,
     _pipeline_status,
@@ -46,7 +47,6 @@ from .nodes import (
     write_run_log_node,
 )
 from .state import NewsAnalysisState, initial_state
-from .llm_runtime import clear_run_hermes_llm, set_run_hermes_llm
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +253,9 @@ def build_workflow(
 def _project_result(state: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """Convert the graph state to a payload that matches ``runtime_result.schema.json``."""
     trace_config = state.get("effective_delivery_config")
-    trace_config = trace_config if isinstance(trace_config, dict) else effective_delivery_config(config)
+    trace_config = (
+        trace_config if isinstance(trace_config, dict) else effective_delivery_config(config)
+    )
     public: dict[str, Any] = {
         "run_id": state.get("run_id", ""),
         "mode": state.get("mode", config.get("mode", "briefing")),
@@ -339,19 +341,16 @@ def _output_status(expected: set[str], successful: set[str]) -> str:
     return "partial_success" if count else "failed"
 
 
-def _write_final_runtime_json(
-    result: dict[str, Any], config: dict[str, Any]
-) -> dict[str, Any]:
+def _write_final_runtime_json(result: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """Atomically write the final public Runtime result after delivery."""
     finalized = dict(result)
     finalized["output_files"] = dict(result.get("output_files", {}))
     finalized["warnings"] = list(result.get("warnings", []))
     mode = str(finalized.get("mode", config.get("mode", "")))
     output_dir = config.get("output_dir")
-    has_business_content = (
-        mode in {"briefing", "deliver", "trend"}
-        and finalized.get("pipeline_status") in {"success", "partial_success"}
-    )
+    has_business_content = mode in {"briefing", "deliver", "trend"} and finalized.get(
+        "pipeline_status"
+    ) in {"success", "partial_success"}
     if not output_dir or not has_business_content:
         finalized["output_status"] = "skipped"
         return finalized
@@ -375,9 +374,7 @@ def _write_final_runtime_json(
 
     try:
         json_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path.write_text(
-            json.dumps(finalized, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        temp_path.write_text(json.dumps(finalized, ensure_ascii=False, indent=2), encoding="utf-8")
         temp_path.replace(json_path)
     except OSError as exc:
         successful.discard("json")
@@ -523,9 +520,7 @@ def run_workflow(
                 or final_state.get("trend_markdown")
                 or (briefing.get("markdown") if isinstance(briefing, dict) else "")
             )
-            final_state["pipeline_status"] = _pipeline_status(
-                final_state, has_content=has_content
-            )
+            final_state["pipeline_status"] = _pipeline_status(final_state, has_content=has_content)
         else:
             final_state["pipeline_status"] = (
                 "partial_success" if final_state.get("errors") else "success"
@@ -544,7 +539,7 @@ __all__ = [
 ]
 
 # Budget-aware public projection and retry routing.
-from .run_budget import public_run_summary as _public_run_summary
+from .run_budget import public_run_summary as _public_run_summary  # noqa: E402 - deliberate late import
 
 _should_retry_or_downgrade_unbudgeted = _should_retry_or_downgrade
 _project_result_unbudgeted = _project_result

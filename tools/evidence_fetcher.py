@@ -23,8 +23,7 @@ MAX_TEXT_LENGTH = 10000
 
 DEFAULT_HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (compatible; EconomicNewsBot/1.0; "
-        "+https://example.com/EconomicNewsAnalysis)"
+        "Mozilla/5.0 (compatible; EconomicNewsBot/1.0; +https://example.com/EconomicNewsAnalysis)"
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
@@ -66,7 +65,9 @@ def fetch_evidence(url: str, timeout: int = REQUEST_TIMEOUT) -> dict[str, Any]:
     read_to = max(30, int(timeout * 1.5))
 
     try:
-        response = requests.get(url, timeout=(connect_to, read_to), headers=DEFAULT_HEADERS, stream=True)
+        response = requests.get(
+            url, timeout=(connect_to, read_to), headers=DEFAULT_HEADERS, stream=True
+        )
     except requests.Timeout as exc:
         result["error"] = f"timeout: {exc}"
         logger.warning("evidence fetch timeout url=%s err=%s", url, exc)
@@ -93,9 +94,7 @@ def fetch_evidence(url: str, timeout: int = REQUEST_TIMEOUT) -> dict[str, Any]:
             for chunk in response.iter_content(chunk_size=READ_CHUNK_SIZE):
                 size += len(chunk)
                 if size > MAX_RESPONSE_SIZE:
-                    result["error"] = (
-                        f"response exceeds max size of {MAX_RESPONSE_SIZE} bytes"
-                    )
+                    result["error"] = f"response exceeds max size of {MAX_RESPONSE_SIZE} bytes"
                     return result
                 chunks.append(chunk)
         except requests.RequestException as exc:

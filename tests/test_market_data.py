@@ -71,10 +71,18 @@ class MarketDataTests(unittest.TestCase):
                 recorded.extend(symbols)
                 return [
                     MarketSnapshot(
-                        symbol_id=s.id, ticker=s.ticker, name=s.name,
-                        asset_class=s.asset_class, region=s.region, last_price=1.0,
-                        change_pct=0.0, period=period, interval=interval, as_of=None,
-                        provider=self.name, status="success",
+                        symbol_id=s.id,
+                        ticker=s.ticker,
+                        name=s.name,
+                        asset_class=s.asset_class,
+                        region=s.region,
+                        last_price=1.0,
+                        change_pct=0.0,
+                        period=period,
+                        interval=interval,
+                        as_of=None,
+                        provider=self.name,
+                        status="success",
                     )
                     for s in symbols
                 ]
@@ -195,7 +203,9 @@ class MarketDataTests(unittest.TestCase):
             result = execute(config)
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["market_context"]["status"], "failed")
-        self.assertIn("Unknown market data provider", result["market_context"]["errors"][0]["message"])
+        self.assertIn(
+            "Unknown market data provider", result["market_context"]["errors"][0]["message"]
+        )
 
     def test_yfinance_provider_uses_fake_module(self):
         class FakeIloc:
@@ -236,9 +246,7 @@ class MarketDataTests(unittest.TestCase):
         symbol = load_market_sources(ROOT / "sources" / "market_sources.yaml")["symbols"][0]
         with patch.dict(sys.modules, {"yfinance": fake_yfinance}):
             snapshots = YFinanceProvider().fetch_snapshots(
-                symbols=[
-                    type("Symbol", (), symbol)()
-                ],
+                symbols=[type("Symbol", (), symbol)()],
                 period="5d",
                 interval="1d",
             )

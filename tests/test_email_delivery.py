@@ -25,7 +25,7 @@ class EmailDeliveryTests(unittest.TestCase):
             text = mml_path.read_text(encoding="utf-8")
             self.assertIn("Subject: 宏观简报", text)
             self.assertIn('name="宏观简报.md"', text)
-            self.assertIn('table-layout:fixed', text)
+            self.assertIn("table-layout:fixed", text)
 
     def test_plain_text_email_hides_markdown_link_target(self):
         self.assertEqual(md_to_plain("新闻 [发布页](https://example.com/very-long)"), "新闻 发布页")
@@ -77,8 +77,9 @@ class EmailDeliveryTests(unittest.TestCase):
         def capture_send(path, _config):
             captured["path"] = path
 
-        with patch("tools.email_delivery.send_mml", side_effect=capture_send), patch.object(
-            Path, "unlink", side_effect=OSError("locked")
+        with (
+            patch("tools.email_delivery.send_mml", side_effect=capture_send),
+            patch.object(Path, "unlink", side_effect=OSError("locked")),
         ):
             result = send_email(
                 email_config={"from": "a@b.com", "to": "c@d.com"},
@@ -104,7 +105,6 @@ class EmailDeliveryTests(unittest.TestCase):
 
         self.assertFalse(result.sent)
         self.assertIn("temp unavailable", result.error or "")
-
 
 
 if __name__ == "__main__":

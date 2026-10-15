@@ -11,7 +11,6 @@ from unittest import TestCase, mock
 
 from tools._version import __version__ as PKG_VERSION
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -58,17 +57,13 @@ class HermesNativePluginTests(TestCase):
         self.assertFalse(ctx.registration["schema"]["additionalProperties"])
 
         expected = {"status": "success", "llm_audit": []}
-        with mock.patch.object(
-            plugin, "run_langgraph_workflow", return_value=expected
-        ) as workflow:
+        with mock.patch.object(plugin, "run_langgraph_workflow", return_value=expected) as workflow:
             encoded = ctx.registration["handler"](
                 {"source_text": "A rate decision", "run_mode": "analyze"}
             )
 
         self.assertEqual(json.loads(encoded), expected)
-        workflow.assert_called_once_with(
-            ctx, "A rate decision", run_mode="analyze"
-        )
+        workflow.assert_called_once_with(ctx, "A rate decision", run_mode="analyze")
 
     def test_manifest_declares_only_the_workflow_tool(self) -> None:
         manifest = (ROOT / "plugin.yaml").read_text(encoding="utf-8")

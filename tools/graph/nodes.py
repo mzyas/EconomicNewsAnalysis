@@ -9,8 +9,8 @@ rest of the pipeline.
 
 from __future__ import annotations
 
-import logging
 import html as html_lib
+import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -18,27 +18,24 @@ from pathlib import Path
 from typing import Any
 
 from ..analyzer import analyses_to_markdown, analyze_item, analyze_items
-from ..briefing_builder import build_daily_briefing, build_daily_briefing_html, SEPARATOR
+from ..briefing_builder import SEPARATOR, build_daily_briefing, build_daily_briefing_html
 from ..config_loader import ROOT
 from ..delivery_trace import effective_delivery_config
 from ..email_delivery import send_email
 from ..email_render import build_combined_email_html, md_to_html, md_to_plain
-from ..run_log import read_last_entry
 from ..evidence_fetcher import batch_fetch, fetch_evidence
 from ..feed_fetcher import fetch_from_config, source_inventory
 from ..google_news_enrichment import enrich_google_news_items
-from ..normalizer import normalize_news_items
-from .events import record_event
-from .research import ResearchAdapter
-from .llm_runtime import get_run_hermes_llm
-
-
-from ..market_data import build_market_context
 from ..markdown_writer import write_markdown_artifact
+from ..market_data import build_market_context
 from ..movers import fetch_mover_items, movers_enabled
+from ..normalizer import normalize_news_items
 from ..relevance_ranker import balance_by_country, rank_items
-from ..run_log import append_log, evaluate_fetch_window
+from ..run_log import append_log, evaluate_fetch_window, read_last_entry
 from ..trend_table import build_trend_rows, render_html, render_markdown
+from .events import record_event
+from .llm_runtime import get_run_hermes_llm
+from .research import ResearchAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +69,7 @@ def _has_valid_markdown(value: Any) -> bool:
             continue
         if stripped in {"待补充", "暂无内容", "N/A", "--"}:
             continue
-        if re.search(
-            r"由\s*Economic News Analysis\b.*自动生成", stripped, re.IGNORECASE
-        ):
+        if re.search(r"由\s*Economic News Analysis\b.*自动生成", stripped, re.IGNORECASE):
             continue
         if re.match(r"数据来源\s*[:：]", stripped):
             continue
@@ -92,7 +87,9 @@ def _has_valid_html(value: Any) -> bool:
     )
     text = html_lib.unescape(re.sub(r"<[^>]+>", " ", without_headings))
     text = re.sub(
-        r"由\s*Economic News Analysis\b.*?自动生成", " ", text,
+        r"由\s*Economic News Analysis\b.*?自动生成",
+        " ",
+        text,
         flags=re.IGNORECASE | re.DOTALL,
     )
     text = re.sub(r"数据来源\s*[:：].*", " ", text, flags=re.IGNORECASE | re.DOTALL)
@@ -100,9 +97,7 @@ def _has_valid_html(value: Any) -> bool:
 
 
 def _html_to_plain(value: str) -> str:
-    return re.sub(
-        r"\s+", " ", html_lib.unescape(re.sub(r"<[^>]+>", " ", value))
-    ).strip()
+    return re.sub(r"\s+", " ", html_lib.unescape(re.sub(r"<[^>]+>", " ", value))).strip()
 
 
 def _valid_attachment(path_value: Any) -> Path | None:
@@ -300,9 +295,9 @@ def google_news_resolve_node(state: dict[str, Any]) -> dict[str, Any]:
         return {
             "items": items,
             "_phase": "google_resolved",
-            "errors": _append_errors(state, [
-                {"type": "GoogleNewsResolveError", "message": str(exc)}
-            ]),
+            "errors": _append_errors(
+                state, [{"type": "GoogleNewsResolveError", "message": str(exc)}]
+            ),
         }
     return {
         "items": resolved,
@@ -341,9 +336,7 @@ def rank_items_node(state: dict[str, Any]) -> dict[str, Any]:
         # Optional per-country cap to stop one country (historically China)
         # from crowding out the rest. Shape: ``{"CN": 4, "US": 4, "JP": 4,
         # "default": 99}``. Absent ⇒ no balancing (backward compatible).
-        country_balance = (
-            graph_cfg.get("country_balance") if isinstance(graph_cfg, dict) else None
-        )
+        country_balance = graph_cfg.get("country_balance") if isinstance(graph_cfg, dict) else None
 
         # Separate by category
         official_items = [i for i in items if _item_category(i) == "official"]
@@ -360,9 +353,7 @@ def rank_items_node(state: dict[str, Any]) -> dict[str, Any]:
         ranked_official = rank_items(
             official_items, focus, None if country_balance else max_official
         )
-        ranked_media = rank_items(
-            media_items, focus, None if country_balance else max_media
-        )
+        ranked_media = rank_items(media_items, focus, None if country_balance else max_media)
         ranked_tech = rank_items(tech_items, focus, max_tech)
         ranked_google = rank_items(google_items, focus, max_google)
         ranked_hot = rank_items(hot_items, focus, max_hot)
@@ -373,12 +364,8 @@ def rank_items_node(state: dict[str, Any]) -> dict[str, Any]:
         # discovery-driven and already has its own diversity guard, so we leave
         # it untouched. Tech/hot are global (not country-split).
         if country_balance:
-            ranked_official = balance_by_country(
-                ranked_official, country_balance, max_official
-            )
-            ranked_media = balance_by_country(
-                ranked_media, country_balance, max_media
-            )
+            ranked_official = balance_by_country(ranked_official, country_balance, max_official)
+            ranked_media = balance_by_country(ranked_media, country_balance, max_media)
 
         # Merge, preserving order: official → media → tech → google → hot → movers
         # (movers last so existing section ordering and mainline picks are unchanged)
@@ -396,9 +383,7 @@ def rank_items_node(state: dict[str, Any]) -> dict[str, Any]:
             "ranked_items": items,
             "items": items,
             "_phase": "ranked",
-            "errors": _append_errors(state, [
-                {"type": "RankError", "message": str(exc)}
-            ]),
+            "errors": _append_errors(state, [{"type": "RankError", "message": str(exc)}]),
         }
     return {"ranked_items": ranked, "items": ranked, "_phase": "ranked"}
 
@@ -467,36 +452,43 @@ def collect_evidence_node(
             results = batch_fetch([url], max_items=1, timeout=timeout)
         except Exception as exc:
             logger.exception("batch_fetch failed for %s", url)
-            new_errors.append({
-                "type": "EvidenceFetchError",
-                "id": item_id,
-                "url": url,
-                "message": f"unexpected error: {exc}",
-            })
-            continue
-        for entry in results:
-            evidence.append({
-                "item_id": item_id,
-                "url": entry.get("url", url),
-                "content": entry.get("content"),
-                "error": entry.get("error"),
-                "truncated": bool(entry.get("truncated", False)),
-            })
-            if entry.get("error"):
-                _has_content = "YES" if entry.get("content") else "NO"
-                logger.warning("EVIDENCE_FETCH url=%s error=%s has_content=%s",
-                    url[:80], entry.get("error","")[:80], _has_content)
-                new_errors.append({
+            new_errors.append(
+                {
                     "type": "EvidenceFetchError",
                     "id": item_id,
+                    "url": url,
+                    "message": f"unexpected error: {exc}",
+                }
+            )
+            continue
+        for entry in results:
+            evidence.append(
+                {
+                    "item_id": item_id,
                     "url": entry.get("url", url),
-                    "message": str(entry["error"]),
-                })
+                    "content": entry.get("content"),
+                    "error": entry.get("error"),
+                    "truncated": bool(entry.get("truncated", False)),
+                }
+            )
+            if entry.get("error"):
+                _has_content = "YES" if entry.get("content") else "NO"
+                logger.warning(
+                    "EVIDENCE_FETCH url=%s error=%s has_content=%s",
+                    url[:80],
+                    entry.get("error", "")[:80],
+                    _has_content,
+                )
+                new_errors.append(
+                    {
+                        "type": "EvidenceFetchError",
+                        "id": item_id,
+                        "url": entry.get("url", url),
+                        "message": str(entry["error"]),
+                    }
+                )
 
-    public_evidence = [
-        {k: v for k, v in entry.items() if k != "item_id"}
-        for entry in evidence
-    ]
+    public_evidence = [{k: v for k, v in entry.items() if k != "item_id"} for entry in evidence]
     return {
         "_evidence": evidence,
         "evidence": public_evidence,
@@ -530,6 +522,7 @@ def _new_research_adapter(
     if fake_llm is not None:
         adapter.set_fake_llm(fake_llm)
     return adapter
+
 
 def _build_source_context(item: dict[str, Any]) -> dict[str, Any]:
     source = item.get("source", {}) or {}
@@ -623,7 +616,9 @@ def analyze_with_llm_node(state: dict[str, Any]) -> dict[str, Any]:
     return update
 
 
-def _market_impact_from_items(items: list[dict[str, Any]], analyses: list[dict[str, Any]]) -> dict[str, str]:
+def _market_impact_from_items(
+    items: list[dict[str, Any]], analyses: list[dict[str, Any]]
+) -> dict[str, str]:
     """Derive a deterministic market impact stub when no human input is provided."""
     if not analyses:
         return {}
@@ -681,9 +676,7 @@ def _llm_market_impact(
         adapter = _new_research_adapter(
             graph_cfg, hermes_llm, llm_audit if llm_audit is not None else []
         )
-        return adapter.market_impact(
-            digest, language=str(config.get("output_language", "zh-CN"))
-        )
+        return adapter.market_impact(digest, language=str(config.get("output_language", "zh-CN")))
     except Exception:
         logger.exception("market impact synthesis failed")
         return {}
@@ -753,19 +746,21 @@ def _llm_macro_background(
         return {}
 
 
-def _derive_mainlines(items: list[dict[str, Any]], analyses: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _derive_mainlines(
+    items: list[dict[str, Any]], analyses: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     """Build fallback daily mainlines from the top items + analyses.
 
     Uses the first signal from each analysis as the headline detail,
     producing richer mainlines than bare titles.
     """
-    from ..briefing_builder import _region, _topics, _is_google_news_item
+    from ..briefing_builder import _is_google_news_item, _region, _topics
 
     analysis_by_id = {str(a.get("news_item_id", "")): a for a in analyses}
     mainlines: list[dict[str, Any]] = []
     seen: set[str] = set()
 
-    for item in (items or []):
+    for item in items or []:
         if _is_google_news_item(item):
             continue
         item_id = str(item.get("id", ""))
@@ -791,10 +786,12 @@ def _derive_mainlines(items: list[dict[str, Any]], analyses: list[dict[str, Any]
 
         if headline not in seen:
             seen.add(headline)
-            mainlines.append({
-                "headline": headline,
-                "supporting_item_ids": [item_id],
-            })
+            mainlines.append(
+                {
+                    "headline": headline,
+                    "supporting_item_ids": [item_id],
+                }
+            )
         if len(mainlines) >= 5:
             break
 
@@ -832,9 +829,7 @@ def quality_gate_node(state: dict[str, Any]) -> dict[str, Any]:
         if not item.get("title"):
             continue  # no title to work with
         try:
-            adapter = _new_research_adapter(
-                graph_cfg, hermes_llm, llm_audit, temperature=0.2
-            )
+            adapter = _new_research_adapter(graph_cfg, hermes_llm, llm_audit, temperature=0.2)
             result = adapter.analyze(
                 title=str(item.get("title", "")),
                 source_context={"title": item.get("title"), "url": item.get("url")},
@@ -888,7 +883,10 @@ def quality_gate_node(state: dict[str, Any]) -> dict[str, Any]:
             or _market_impact_from_items(items, analyses)
             or {}
         )
-        state["daily"] = {**(daily if isinstance(daily, dict) else {}), "market_impact": market_impact}
+        state["daily"] = {
+            **(daily if isinstance(daily, dict) else {}),
+            "market_impact": market_impact,
+        }
 
     # ── 中美日宏观背景：优先 LLM 合成三段叙述 ─────────────────────────────
     # 留空时 build_briefing_node 会回退到 builder 的确定性（标题归并）版本。
@@ -915,12 +913,14 @@ def quality_gate_node(state: dict[str, Any]) -> dict[str, Any]:
     # when no article body could be fetched, so a missing fetch must not block
     # delivery. We still compute it for the warnings/log below.
     missing_evidence = [
-        item_id for item_id in important_ids
+        item_id
+        for item_id in important_ids
         if not any(e.get("content") for e in evidence_by_item.get(item_id, []))
     ]
 
     missing_signals = [
-        a for a in analyses
+        a
+        for a in analyses
         if important_ids.intersection({str(a.get("news_item_id", ""))}) and not a.get("signals")
     ]
 
@@ -953,9 +953,9 @@ def quality_gate_node(state: dict[str, Any]) -> dict[str, Any]:
 
     issues: list[str] = []
     if missing_signals:
-        issues.append("missing_signals:" + ",".join(
-            str(a.get("news_item_id", "")) for a in missing_signals
-        ))
+        issues.append(
+            "missing_signals:" + ",".join(str(a.get("news_item_id", "")) for a in missing_signals)
+        )
     if untranslated:
         issues.append("untranslated_titles:" + ",".join(untranslated))
     if not mainlines_ok:
@@ -1179,9 +1179,7 @@ def write_outputs_node(state: dict[str, Any]) -> dict[str, Any]:
         }
     warnings = list(state.get("warnings", []))
     try:
-        markdown_path = write_markdown_artifact(
-            Path(output_dir), topic, str(markdown_output)
-        )
+        markdown_path = write_markdown_artifact(Path(output_dir), topic, str(markdown_output))
         if not markdown_path.is_file() or markdown_path.stat().st_size == 0:
             raise OSError("Markdown 产物写入后不存在或为空")
         merged["markdown"] = str(markdown_path)
@@ -1223,7 +1221,6 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
         logger.info("delivery trace: %s", fields)
         return fields
 
-
     if delivery.get("email_sent"):
         run_id = state.get("run_id", "")
         warnings.append(f"run_id {run_id} 邮件已发送，跳过重复投递。")
@@ -1231,7 +1228,9 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
             "warnings": warnings,
             "output_files": output_files,
             "delivery": delivery,
-            **_trace_fields(email_sent=True, email_send_attempted=False, delivery_skip_reason="already_sent"),
+            **_trace_fields(
+                email_sent=True, email_send_attempted=False, delivery_skip_reason="already_sent"
+            ),
             "email_sent": True,
             "pipeline_status": pipeline_status,
             "output_status": output_status,
@@ -1245,7 +1244,11 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
         return {
             "warnings": warnings,
             "output_files": output_files,
-            **_trace_fields(email_sent=False, email_send_attempted=False, delivery_skip_reason="delivery_not_requested"),
+            **_trace_fields(
+                email_sent=False,
+                email_send_attempted=False,
+                delivery_skip_reason="delivery_not_requested",
+            ),
             "delivery": delivery,
             "email_sent": False,
             "pipeline_status": pipeline_status,
@@ -1261,7 +1264,11 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
         warnings.append("email.send 未启用，跳过邮件投递。")
         return {
             "warnings": warnings,
-            **_trace_fields(email_sent=False, email_send_attempted=False, delivery_skip_reason="email_send_disabled"),
+            **_trace_fields(
+                email_sent=False,
+                email_send_attempted=False,
+                delivery_skip_reason="email_send_disabled",
+            ),
             "output_files": output_files,
             "delivery": delivery,
             "email_sent": False,
@@ -1272,7 +1279,8 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
             "_phase": "delivered",
         }
 
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime, timedelta, timezone
+
     now = datetime.now(timezone.utc)
     jst = now.astimezone(timezone(timedelta(hours=9)))
     date_str = jst.strftime("%Y-%m-%d")
@@ -1304,10 +1312,7 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
             last_entry = read_last_entry(Path(log_path))
             if last_entry and last_entry.get("item_urls"):
                 prev_urls = set(last_entry.get("item_urls", []))
-                cur_urls = {
-                    i.get("url") or i.get("link") or i.get("id", "")
-                    for i in items
-                }
+                cur_urls = {i.get("url") or i.get("link") or i.get("id", "") for i in items}
                 cur_urls.discard("")
                 if cur_urls and cur_urls <= prev_urls:
                     has_new_items = False
@@ -1316,7 +1321,11 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
     attachment = _valid_attachment(output_files.get("markdown"))
     if has_content:
         kind = "report_with_attachment" if attachment else "report_without_attachment"
-        text_body = md_to_plain(str(briefing_markdown)) if has_markdown else _html_to_plain(str(briefing_html))
+        text_body = (
+            md_to_plain(str(briefing_markdown))
+            if has_markdown
+            else _html_to_plain(str(briefing_html))
+        )
         try:
             combined_html = build_combined_email_html(
                 trend_rows=trend_rows,
@@ -1350,13 +1359,17 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
     sent = result.sent
     if not sent:
         warnings.append(f"邮件发送失败: {result.error or '未知错误'}")
-    trace_fields = _trace_fields(email_sent=sent, email_send_attempted=True, delivery_skip_reason=None)
-    delivery.update({
-        "email_sent": sent,
-        "delivery_status": "success" if sent else "failed",
-        "delivery_kind": kind,
-        **trace_fields,
-    })
+    trace_fields = _trace_fields(
+        email_sent=sent, email_send_attempted=True, delivery_skip_reason=None
+    )
+    delivery.update(
+        {
+            "email_sent": sent,
+            "delivery_status": "success" if sent else "failed",
+            "delivery_kind": kind,
+            **trace_fields,
+        }
+    )
     if sent:
         delivery["email_sent_at"] = _now_iso()
 
@@ -1451,7 +1464,11 @@ __all__ = [
 
 # Budget wrappers are defined after the original nodes so normal graph imports
 # receive deadline-aware behavior without changing the underlying adapters.
-from .run_budget import begin_stage as _budget_begin, complete_stage as _budget_complete, should_stop_optional_work as _budget_stop
+from .run_budget import (  # noqa: E402 - deliberate: wrappers are defined after the nodes
+    begin_stage as _budget_begin,
+    complete_stage as _budget_complete,
+    should_stop_optional_work as _budget_stop,
+)
 
 _fetch_feeds_unbudgeted = fetch_feeds_node
 _collect_evidence_unbudgeted = collect_evidence_node
@@ -1467,7 +1484,11 @@ def _budgeted(state: dict[str, Any], stage: str, target: int, active: str | None
     _budget_begin(budget, stage, completed_count=0, target_count=target, active_item=active)
     if _budget_stop(budget):
         _budget_complete(budget, stage, completed_count=0, status="skipped")
-        return {"_run_budget": budget, "warnings": list(state.get("warnings", [])) + [f"Budget downgrade: {stage} stopped at {active or 'stage start'}."]}
+        return {
+            "_run_budget": budget,
+            "warnings": list(state.get("warnings", []))
+            + [f"Budget downgrade: {stage} stopped at {active or 'stage start'}."],
+        }
     update = callback()
     completed = len(update.get("analysis", update.get("_evidence", update.get("items", []))))
     _budget_complete(budget, stage, completed_count=completed)
@@ -1478,14 +1499,26 @@ def fetch_feeds_node(state: dict[str, Any]) -> dict[str, Any]:
     return _budgeted(state, "rss", 1, "RSS feeds", lambda: _fetch_feeds_unbudgeted(state))
 
 
-def collect_evidence_node(state: dict[str, Any], research_max_items: int | None = None) -> dict[str, Any]:
-    target = research_max_items or int((state.get("config", {}).get("graph", {}) or {}).get("research_max_items", 5))
-    return _budgeted(state, "evidence", target, "next evidence URL", lambda: _collect_evidence_unbudgeted(state, research_max_items))
+def collect_evidence_node(
+    state: dict[str, Any], research_max_items: int | None = None
+) -> dict[str, Any]:
+    target = research_max_items or int(
+        (state.get("config", {}).get("graph", {}) or {}).get("research_max_items", 5)
+    )
+    return _budgeted(
+        state,
+        "evidence",
+        target,
+        "next evidence URL",
+        lambda: _collect_evidence_unbudgeted(state, research_max_items),
+    )
 
 
 def analyze_with_llm_node(state: dict[str, Any]) -> dict[str, Any]:
     target = len(state.get("ranked_items") or state.get("items") or [])
-    return _budgeted(state, "analysis", target, "next analysis item", lambda: _analyze_unbudgeted(state))
+    return _budgeted(
+        state, "analysis", target, "next analysis item", lambda: _analyze_unbudgeted(state)
+    )
 
 
 def quality_gate_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -1499,13 +1532,19 @@ def build_briefing_node(state: dict[str, Any]) -> dict[str, Any]:
     update = _build_briefing_unbudgeted(state)
     budget = state.get("_run_budget") or {}
     if budget.get("degraded"):
-        notice = ("> **Budget-degraded briefing**: optional work stopped at "
-                  f"{budget.get('blocked_stage') or 'unknown'} ({budget.get('blocked_item') or 'unknown'}).\n"
-                  "> Evidence or quality checks may be incomplete; conclusions have lower confidence.\n\n")
+        notice = (
+            "> **Budget-degraded briefing**: optional work stopped at "
+            f"{budget.get('blocked_stage') or 'unknown'} ({budget.get('blocked_item') or 'unknown'}).\n"
+            "> Evidence or quality checks may be incomplete; conclusions have lower confidence.\n\n"
+        )
         update["briefing_markdown"] = notice + update.get("briefing_markdown", "")
         update["briefing"]["markdown"] = update["briefing_markdown"]
-        update["warnings"] = list(update.get("warnings", [])) + ["Budget-degraded briefing delivered."]
+        update["warnings"] = list(update.get("warnings", [])) + [
+            "Budget-degraded briefing delivered."
+        ]
     return update
+
+
 _write_run_log_unbudgeted = write_run_log_node
 
 
@@ -1515,10 +1554,13 @@ def write_run_log_node(state: dict[str, Any]) -> dict[str, Any]:
     budget = state.get("_run_budget")
     log_path = (state.get("config") or {}).get("log_path")
     if isinstance(budget, dict) and log_path:
-        append_log(Path(log_path), {
-            "record_type": "stage_checkpoint_summary",
-            "run_id": state.get("run_id", ""),
-            "budget": budget,
-            "completed_at": _now_iso(),
-        })
+        append_log(
+            Path(log_path),
+            {
+                "record_type": "stage_checkpoint_summary",
+                "run_id": state.get("run_id", ""),
+                "budget": budget,
+                "completed_at": _now_iso(),
+            },
+        )
     return {**update, **({"_run_budget": budget} if isinstance(budget, dict) else {})}

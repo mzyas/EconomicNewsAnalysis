@@ -26,7 +26,6 @@ from tools.graph.workflow import _project_result, _write_final_runtime_json, run
 from tools.runtime import _project_to_old_schema
 from tools.schema_validation import validate_file
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 
@@ -38,17 +37,21 @@ def _base_config(
     email_send: bool = True,
     input_items: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    items = input_items if input_items is not None else [
-        {
-            "title": "Fed signals rate path",
-            "summary": "Officials indicated future path of rates.",
-            "source_id": "fed_fomc",
-            "source_name": "Federal Reserve",
-            "source_country": "US",
-            "source_language": "en",
-            "source_tags": ["monetary_policy", "inflation", "usd"],
-        }
-    ]
+    items = (
+        input_items
+        if input_items is not None
+        else [
+            {
+                "title": "Fed signals rate path",
+                "summary": "Officials indicated future path of rates.",
+                "source_id": "fed_fomc",
+                "source_name": "Federal Reserve",
+                "source_country": "US",
+                "source_language": "en",
+                "source_tags": ["monetary_policy", "inflation", "usd"],
+            }
+        ]
+    )
     return {
         "mode": mode,
         "output_language": "zh-CN",
@@ -130,8 +133,7 @@ class DeliverEmailIdempotencyTests(unittest.TestCase):
         mock_send.assert_not_called()
         self.assertTrue(update.get("email_sent"))
         self.assertTrue(
-            any("已发送" in w or "already sent" in w.lower()
-                for w in update.get("warnings", []))
+            any("已发送" in w or "already sent" in w.lower() for w in update.get("warnings", []))
         )
 
     def test_fresh_run_sends_once_and_records_metadata(self) -> None:
@@ -166,9 +168,7 @@ class DeliverEmailConditionsTests(unittest.TestCase):
                 update = deliver_email_node(state)
         mock_send.assert_not_called()
         self.assertFalse(update.get("email_sent"))
-        self.assertTrue(
-            any("deliver_email" in w for w in update.get("warnings", []))
-        )
+        self.assertTrue(any("deliver_email" in w for w in update.get("warnings", [])))
 
     def test_no_send_when_email_send_flag_false(self) -> None:
         config = _base_config(deliver_email=True, email_send=False)
@@ -223,9 +223,7 @@ class DeliverEmailConditionsTests(unittest.TestCase):
             ):
                 update = deliver_email_node(state)
         self.assertFalse(update.get("email_sent"))
-        self.assertTrue(
-            any("Missing email config" in w for w in update.get("warnings", []))
-        )
+        self.assertTrue(any("Missing email config" in w for w in update.get("warnings", [])))
 
     def test_no_markdown_artifact_sends_body_only(self) -> None:
         state = _make_state(output_files={})
@@ -337,20 +335,19 @@ class DeliverEmailViaWorkflowTests(unittest.TestCase):
                 deliver_email=True,
                 email_send=True,
             )
-            config["graph"]["checkpoint_path"] = str(
-                Path(temp_dir) / "cp.sqlite"
-            )
+            config["graph"]["checkpoint_path"] = str(Path(temp_dir) / "cp.sqlite")
             delivery_result = DeliveryResult(True, None)
-            with patch(
+            with (
+                patch(
                     "tools.graph.nodes.send_email",
                     return_value=delivery_result,
-                 ) as mock_send, patch(
-                     "tools.graph.workflow.quality_gate_node",
-                     side_effect=_passing_quality_gate,
-                 ):
-                first = run_workflow(
-                    config, mode="deliver", run_id="idempotent-run"
-                )
+                ) as mock_send,
+                patch(
+                    "tools.graph.workflow.quality_gate_node",
+                    side_effect=_passing_quality_gate,
+                ),
+            ):
+                first = run_workflow(config, mode="deliver", run_id="idempotent-run")
                 first_send_calls = mock_send.call_count
                 second = run_workflow(
                     config,
@@ -401,13 +398,9 @@ class ProjectToOldSchemaTests(unittest.TestCase):
                 "warnings": ["邮件发送失败: smtp failed"],
                 "output_files": {"markdown": str(markdown)},
             }
-            finalized = _write_final_runtime_json(
-                result, {"output_dir": temp_dir}
-            )
+            finalized = _write_final_runtime_json(result, {"output_dir": temp_dir})
 
-            saved = json.loads(
-                Path(finalized["output_files"]["json"]).read_text(encoding="utf-8")
-            )
+            saved = json.loads(Path(finalized["output_files"]["json"]).read_text(encoding="utf-8"))
         self.assertEqual(saved, finalized)
         self.assertEqual(saved["delivery_status"], "failed")
         self.assertEqual(saved["delivery_kind"], "report_with_attachment")
@@ -438,6 +431,7 @@ class ProjectToOldSchemaTests(unittest.TestCase):
         self.assertEqual(finalized["output_status"], "partial_success")
         self.assertNotIn("json", finalized["output_files"])
         self.assertTrue(any("disk full" in warning for warning in finalized["warnings"]))
+
     def test_strips_every_internal_field(self) -> None:
         state: dict[str, Any] = {
             "run_id": "abc",
@@ -469,9 +463,16 @@ class ProjectToOldSchemaTests(unittest.TestCase):
         for key in projected:
             self.assertFalse(key.startswith("_"), key)
         for internal in (
-            "_phase", "_evidence", "_retry_count", "_quality_gate",
-            "_events", "_items_fetched", "_sources_successful",
-            "_sources_failed", "_sources_skipped", "_research_queue",
+            "_phase",
+            "_evidence",
+            "_retry_count",
+            "_quality_gate",
+            "_events",
+            "_items_fetched",
+            "_sources_successful",
+            "_sources_failed",
+            "_sources_skipped",
+            "_research_queue",
         ):
             self.assertNotIn(internal, projected)
         self.assertEqual(projected["run_id"], "abc")
@@ -548,13 +549,16 @@ class EndToEndDeliverySmokeTests(unittest.TestCase):
                 deliver_email=True,
                 email_send=True,
             )
-            with patch(
+            with (
+                patch(
                     "tools.graph.nodes.send_email",
                     return_value=DeliveryResult(True, None),
-                 ) as mock_send, patch(
-                     "tools.graph.workflow.quality_gate_node",
-                     side_effect=_passing_quality_gate,
-                 ):
+                ) as mock_send,
+                patch(
+                    "tools.graph.workflow.quality_gate_node",
+                    side_effect=_passing_quality_gate,
+                ),
+            ):
                 result = run_workflow(config, mode="deliver")
             mock_send.assert_called()
             self.assertTrue(result["email_sent"])
@@ -580,6 +584,7 @@ class LegacyExampleConfigTests(unittest.TestCase):
                 config = load_runtime_config(path)
                 self.assertIn("mode", config)
                 self.assertIn("_skill", config)
+
 
 if __name__ == "__main__":
     unittest.main()

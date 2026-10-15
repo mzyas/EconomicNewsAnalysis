@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from tools.config_loader import ROOT, load_runtime_config
+from tools.config_loader import ROOT
 from tools.graph.nodes import (
     _has_valid_html,
     _has_valid_markdown,
@@ -30,7 +30,6 @@ from tools.graph.nodes import (
     write_outputs_node,
     write_run_log_node,
 )
-from tools.graph.research import ResearchAdapter
 from tools.graph.state import initial_state
 from tools.graph.workflow import (
     _should_deliver,
@@ -187,8 +186,15 @@ class GoogleNewsResolveNodeTests(unittest.TestCase):
         ]
         with patch("tools.graph.nodes.enrich_google_news_items") as mock:
             mock.return_value = (
-                [{"id": "g-1", "title": "Macro news", "url": "https://example.com/a",
-                  "summary": "real summary", "discovery": {"channel": "google_news", "verification_status": "verified"}}],
+                [
+                    {
+                        "id": "g-1",
+                        "title": "Macro news",
+                        "url": "https://example.com/a",
+                        "summary": "real summary",
+                        "discovery": {"channel": "google_news", "verification_status": "verified"},
+                    }
+                ],
                 [],
             )
             update = google_news_resolve_node(state)
@@ -207,9 +213,13 @@ class RankItemsNodeTests(unittest.TestCase):
     def test_ranks_items(self) -> None:
         state = _state()
         state["items"] = [
-            {"id": "x", "title": "Macro news", "summary": "S",
-             "source": {"id": "fed_fomc", "name": "Fed", "country": "US"},
-             "tags": ["monetary_policy", "inflation"]}
+            {
+                "id": "x",
+                "title": "Macro news",
+                "summary": "S",
+                "source": {"id": "fed_fomc", "name": "Fed", "country": "US"},
+                "tags": ["monetary_policy", "inflation"],
+            }
         ]
         update = rank_items_node(state)
         self.assertGreaterEqual(len(update["ranked_items"]), 1)
@@ -245,10 +255,17 @@ class CollectEvidenceNodeTests(unittest.TestCase):
         state["items"] = [
             {"id": "i-1", "title": "T", "summary": "S", "url": "https://example.com/x"}
         ]
-        with patch("tools.graph.nodes.batch_fetch", return_value=[{
-            "url": "https://example.com/x", "content": None,
-            "error": "timeout", "truncated": False,
-        }]):
+        with patch(
+            "tools.graph.nodes.batch_fetch",
+            return_value=[
+                {
+                    "url": "https://example.com/x",
+                    "content": None,
+                    "error": "timeout",
+                    "truncated": False,
+                }
+            ],
+        ):
             update = collect_evidence_node(state, research_max_items=1)
         self.assertEqual(len(update["errors"]), 1)
         self.assertEqual(update["errors"][0]["type"], "EvidenceFetchError")
@@ -270,12 +287,14 @@ class CollectEvidenceNodeTests(unittest.TestCase):
             },
         ]
         with patch("tools.graph.nodes.batch_fetch") as mock:
-            mock.return_value = [{
-                "url": "https://publisher.example.com/article",
-                "content": "ok",
-                "error": None,
-                "truncated": False,
-            }]
+            mock.return_value = [
+                {
+                    "url": "https://publisher.example.com/article",
+                    "content": "ok",
+                    "error": None,
+                    "truncated": False,
+                }
+            ]
             collect_evidence_node(state, research_max_items=1)
         called_urls = mock.call_args[0][0]
         self.assertEqual(called_urls, ["https://publisher.example.com/article"])
@@ -387,8 +406,13 @@ class BuildBriefingNodeTests(unittest.TestCase):
     def test_builds_briefing_markdown(self) -> None:
         state = _state()
         state["ranked_items"] = [
-            {"id": "a", "title": "Macro", "summary": "S", "relevance_score": 0.9,
-             "source": {"name": "Fed", "country": "US"}}
+            {
+                "id": "a",
+                "title": "Macro",
+                "summary": "S",
+                "relevance_score": 0.9,
+                "source": {"name": "Fed", "country": "US"},
+            }
         ]
         state["analysis"] = [
             {
@@ -409,13 +433,16 @@ class BuildBriefingNodeTests(unittest.TestCase):
     def test_partial_report_names_missing_sources(self) -> None:
         state = _state()
         state["ranked_items"] = [
-            {"id": "a", "title": "Macro", "summary": "S", "relevance_score": 0.9,
-             "source": {"name": "Fed", "country": "US"}}
+            {
+                "id": "a",
+                "title": "Macro",
+                "summary": "S",
+                "relevance_score": 0.9,
+                "source": {"name": "Fed", "country": "US"},
+            }
         ]
         state["analysis"] = [{"news_item_id": "a", "signals": ["inflation"]}]
-        state["errors"] = [
-            {"type": "FetchError", "source_name": "Source A", "message": "timeout"}
-        ]
+        state["errors"] = [{"type": "FetchError", "source_name": "Source A", "message": "timeout"}]
         state["skipped_sources"] = [{"source_name": "Source B", "reason": "disabled"}]
 
         update = build_briefing_node(state)
@@ -430,9 +457,7 @@ class ContentAndPipelineStatusTests(unittest.TestCase):
     def test_markdown_requires_substantive_non_heading_content(self) -> None:
         self.assertFalse(_has_valid_markdown("\ufeff  \n# 财经消息日报\n## 摘要"))
         self.assertFalse(
-            _has_valid_markdown(
-                "# 财经消息日报\n\n由 Economic News Analysis v0.8.0 自动生成"
-            )
+            _has_valid_markdown("# 财经消息日报\n\n由 Economic News Analysis v0.8.0 自动生成")
         )
         self.assertTrue(_has_valid_markdown("# 财经消息日报\n\n有效正文"))
 
@@ -680,12 +705,8 @@ class RunWorkflowResumeTests(unittest.TestCase):
     def test_resume_loads_existing_state(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             config = _base_config(mode="briefing")
-            config["graph"]["checkpoint_path"] = str(
-                Path(temp_dir) / "cp.sqlite"
-            )
-            first = run_workflow(
-                config, mode="briefing", run_id="resume-run"
-            )
+            config["graph"]["checkpoint_path"] = str(Path(temp_dir) / "cp.sqlite")
+            first = run_workflow(config, mode="briefing", run_id="resume-run")
             self.assertEqual(first["run_id"], "resume-run")
             resumed = run_workflow(
                 config,

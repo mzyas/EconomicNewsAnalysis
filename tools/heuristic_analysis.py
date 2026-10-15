@@ -10,13 +10,61 @@ import sys
 from pathlib import Path
 
 TOPIC_KEYWORDS = {
-    "monetary_policy": ["fed", "fomc", "boj", "ecb", "central bank", "rate", "interest", "央行", "美联储", "日银", "日本央行", "欧洲央行", "利率", "降息", "加息"],
+    "monetary_policy": [
+        "fed",
+        "fomc",
+        "boj",
+        "ecb",
+        "central bank",
+        "rate",
+        "interest",
+        "央行",
+        "美联储",
+        "日银",
+        "日本央行",
+        "欧洲央行",
+        "利率",
+        "降息",
+        "加息",
+    ],
     "inflation": ["cpi", "ppi", "pce", "inflation", "price", "通胀", "物价", "核心通胀"],
-    "employment": ["nfp", "payroll", "unemployment", "wage", "jobless", "就业", "失业", "工资", "薪资"],
-    "gdp_growth": ["gdp", "growth", "recession", "pmi", "retail sales", "增长", "衰退", "采购经理", "零售"],
+    "employment": [
+        "nfp",
+        "payroll",
+        "unemployment",
+        "wage",
+        "jobless",
+        "就业",
+        "失业",
+        "工资",
+        "薪资",
+    ],
+    "gdp_growth": [
+        "gdp",
+        "growth",
+        "recession",
+        "pmi",
+        "retail sales",
+        "增长",
+        "衰退",
+        "采购经理",
+        "零售",
+    ],
     "fiscal_policy": ["fiscal", "budget", "treasury", "debt", "财政", "预算", "国债"],
     "trade": ["tariff", "export", "import", "trade", "关税", "出口", "进口", "贸易"],
-    "fx": ["fx", "currency", "usd", "jpy", "cny", "yen", "dollar", "汇率", "美元", "日元", "人民币"],
+    "fx": [
+        "fx",
+        "currency",
+        "usd",
+        "jpy",
+        "cny",
+        "yen",
+        "dollar",
+        "汇率",
+        "美元",
+        "日元",
+        "人民币",
+    ],
     "energy": ["oil", "gas", "energy", "opec", "原油", "能源", "天然气"],
     "geopolitics": ["war", "sanction", "conflict", "geopolitical", "战争", "制裁", "冲突", "地缘"],
 }
@@ -87,7 +135,9 @@ def summarize(
 
     region_text = "、".join(REGION_LABELS_ZH.get(item, item) for item in regions)
     topic_text = "、".join(TOPIC_LABELS_ZH.get(item, item) for item in topics)
-    return f"该新闻涉及{region_text}的{topic_text}，具体事实与政策含义需结合原文数据和措辞进一步确认。"
+    return (
+        f"该新闻涉及{region_text}的{topic_text}，具体事实与政策含义需结合原文数据和措辞进一步确认。"
+    )
 
 
 def build_analysis(
@@ -134,14 +184,8 @@ def build_analysis(
 
 
 def to_markdown(result: dict) -> str:
-    regions = [
-        REGION_LABELS_ZH.get(item, item)
-        for item in result["regions"]
-    ]
-    topics = [
-        TOPIC_LABELS_ZH.get(item, item)
-        for item in result["topics"]
-    ]
+    regions = [REGION_LABELS_ZH.get(item, item) for item in result["regions"]]
+    topics = [TOPIC_LABELS_ZH.get(item, item) for item in result["topics"]]
     lines = [
         "## 新闻摘要",
         result["summary"],
@@ -171,9 +215,13 @@ def to_markdown(result: dict) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=Path, help="Path to a UTF-8 text file containing the news item.")
+    parser.add_argument(
+        "--input", type=Path, help="Path to a UTF-8 text file containing the news item."
+    )
     parser.add_argument("--stdin", action="store_true", help="Read news text from stdin.")
-    parser.add_argument("--focus", nargs="*", default=[], help="Assets to focus on, such as USDJPY Gold Nikkei.")
+    parser.add_argument(
+        "--focus", nargs="*", default=[], help="Assets to focus on, such as USDJPY Gold Nikkei."
+    )
     parser.add_argument("--format", choices=["json", "markdown"], default="json")
     args = parser.parse_args()
 
@@ -185,7 +233,11 @@ def main() -> int:
         parser.error("Provide --input or --stdin")
 
     result = build_analysis(text, args.focus)
-    print(to_markdown(result) if args.format == "markdown" else json.dumps(result, ensure_ascii=False, indent=2))
+    print(
+        to_markdown(result)
+        if args.format == "markdown"
+        else json.dumps(result, ensure_ascii=False, indent=2)
+    )
     return 0
 
 

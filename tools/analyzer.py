@@ -17,9 +17,7 @@ def analyze_item(
     focus_assets: list[str] | None = None,
     output_language: str = "zh-CN",
 ) -> dict[str, Any]:
-    text = "\n".join(
-        part for part in [item.get("title", ""), item.get("summary", "")] if part
-    )
+    text = "\n".join(part for part in [item.get("title", ""), item.get("summary", "")] if part)
     analysis = build_analysis(
         text,
         focus_assets or [],
@@ -55,10 +53,7 @@ def analyze_items(
     focus_assets: list[str] | None = None,
     output_language: str = "zh-CN",
 ) -> list[dict[str, Any]]:
-    return [
-        analyze_item(item, focus_assets, output_language)
-        for item in items
-    ]
+    return [analyze_item(item, focus_assets, output_language) for item in items]
 
 
 def analyses_to_markdown(analyses: list[dict[str, Any]]) -> str:

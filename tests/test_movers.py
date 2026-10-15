@@ -89,9 +89,7 @@ class SelectMoversTests(unittest.TestCase):
     def test_thresholds_are_configurable(self):
         snap = _snap(day=-2.0, week=None)
         self.assertEqual(select_movers([snap], {}), [])
-        self.assertEqual(
-            len(select_movers([snap], {"movers": {"day_threshold_pct": 2.0}})), 1
-        )
+        self.assertEqual(len(select_movers([snap], {"movers": {"day_threshold_pct": 2.0}})), 1)
 
 
 class QueryTests(unittest.TestCase):

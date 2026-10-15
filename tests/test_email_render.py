@@ -1,14 +1,14 @@
 import unittest
 
 from tools.email_render import (
+    _strip_trend_section,
+    _trim_news_cell,
+    _truncate_signal,
     build_combined_email_html,
     inline_format,
     md_to_html,
     md_to_plain,
     slim_news_tables,
-    _strip_trend_section,
-    _trim_news_cell,
-    _truncate_signal,
 )
 
 TREND_ROWS = [
@@ -265,7 +265,9 @@ class SlimEdgeCaseTests(unittest.TestCase):
 
 
 class StripTrendSectionTests(unittest.TestCase):
-    TREND = "## 市场趋势表\n*截至 2026-10-05*\n\n| 资产 | 最新价 |\n|---|---|\n| S&P 500 | 7,722.72 |\n"
+    TREND = (
+        "## 市场趋势表\n*截至 2026-10-05*\n\n| 资产 | 最新价 |\n|---|---|\n| S&P 500 | 7,722.72 |\n"
+    )
 
     def test_news_table_right_after_trend_table_is_kept(self):
         text = self.TREND + "\n| 主题 | 新闻 |\n|---|---|\n| 通胀 | 标题 |\n\n正文"

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import sys
 import uuid
 from datetime import datetime, timezone
-import sys
 from typing import Any
 
 from ..delivery_trace import effective_delivery_config
