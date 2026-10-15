@@ -109,9 +109,7 @@ def should_stop_optional_work(budget: dict[str, Any], *, now: float | None = Non
         return False
 
     budget["degraded"] = True
-    budget["degradation_reason"] = (
-        "budget_exhausted" if remaining <= 0 else "finalization_reserve"
-    )
+    budget["degradation_reason"] = "budget_exhausted" if remaining <= 0 else "finalization_reserve"
     budget["blocked_stage"] = budget.get("active_stage")
     budget["blocked_item"] = budget.get("active_item")
     return True
@@ -120,7 +118,13 @@ def should_stop_optional_work(budget: dict[str, Any], *, now: float | None = Non
 def public_run_summary(budget: dict[str, Any]) -> dict[str, Any]:
     """Return stable, serializable budget fields for logs and runtime output."""
     fields = (
-        "total_seconds", "reserve_seconds", "remaining_seconds", "degraded",
-        "degradation_reason", "blocked_stage", "blocked_item", "checkpoints",
+        "total_seconds",
+        "reserve_seconds",
+        "remaining_seconds",
+        "degraded",
+        "degradation_reason",
+        "blocked_stage",
+        "blocked_item",
+        "checkpoints",
     )
     return {field: budget.get(field) for field in fields}

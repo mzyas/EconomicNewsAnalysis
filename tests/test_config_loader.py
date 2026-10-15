@@ -59,8 +59,7 @@ class ConfigLoaderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             env_path = Path(temp_dir) / "runtime.env"
             env_path.write_text(
-                "export TEST_RUNTIME_ONLY=from_env_file\n"
-                "EIA_API_KEY=from_env_file\n",
+                "export TEST_RUNTIME_ONLY=from_env_file\nEIA_API_KEY=from_env_file\n",
                 encoding="utf-8",
             )
             config_path = Path(temp_dir) / "runtime.json"
@@ -78,15 +77,18 @@ class ConfigLoaderTests(unittest.TestCase):
         for path in (ROOT / "examples").glob("*.yaml"):
             with self.subTest(path=path.name):
                 config = load_runtime_config(path)
-                self.assertIn(config["mode"], {
-                    "analyze",
-                    "fetch",
-                    "briefing",
-                    "deliver",
-                    "check",
-                    "list-sources",
-                    "trend",
-                })
+                self.assertIn(
+                    config["mode"],
+                    {
+                        "analyze",
+                        "fetch",
+                        "briefing",
+                        "deliver",
+                        "check",
+                        "list-sources",
+                        "trend",
+                    },
+                )
 
     def test_daily_briefing_includes_all_google_news_sources(self):
         for path in [
@@ -98,48 +100,43 @@ class ConfigLoaderTests(unittest.TestCase):
                 sources = load_config(Path(config["source_config"]))
                 selected = filter_sources(sources, config["filters"])
                 selected_google = {
-                    source.id
-                    for source in selected
-                    if source.id.startswith("google_news_")
+                    source.id for source in selected if source.id.startswith("google_news_")
                 }
                 all_google = {
-                    source.id
-                    for source in sources
-                    if source.id.startswith("google_news_")
+                    source.id for source in sources if source.id.startswith("google_news_")
                 }
                 self.assertEqual(selected_google, all_google)
                 selected_automatic = {
-                    source.id
-                    for source in selected
-                    if source.type not in {"official_page", "api"}
+                    source.id for source in selected if source.type not in {"official_page", "api"}
                 }
                 all_automatic = {
-                    source.id
-                    for source in sources
-                    if source.type not in {"official_page", "api"}
+                    source.id for source in sources if source.type not in {"official_page", "api"}
                 }
                 self.assertEqual(selected_automatic, all_automatic)
                 self.assertEqual(config["max_ranked_items"], 20)
+
     def test_new_official_api_sources_are_registered(self):
         sources = load_config(ROOT / "sources" / "rss_sources.yaml")
         source_ids = {source.id for source in sources}
-        self.assertTrue({
-            "bls_public_data_api",
-            "bea_api",
-            "fred_api",
-            "congress_gov_api",
-            "sec_edgar_api",
-            "eia_api",
-            "finra_api",
-            "cninfo_api",
-            "newyorkfed_markets_api",
-            "cabinet_office_rss",
-            "meti_statistics_rss",
-            "cbo_publications_rss",
-            "usda_home_rss",
-            "usda_releases_rss",
-            "usda_blogs_rss",
-        }.issubset(source_ids))
+        self.assertTrue(
+            {
+                "bls_public_data_api",
+                "bea_api",
+                "fred_api",
+                "congress_gov_api",
+                "sec_edgar_api",
+                "eia_api",
+                "finra_api",
+                "cninfo_api",
+                "newyorkfed_markets_api",
+                "cabinet_office_rss",
+                "meti_statistics_rss",
+                "cbo_publications_rss",
+                "usda_home_rss",
+                "usda_releases_rss",
+                "usda_blogs_rss",
+            }.issubset(source_ids)
+        )
 
 
 if __name__ == "__main__":

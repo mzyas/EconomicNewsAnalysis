@@ -153,7 +153,9 @@ def _live_config(config: dict[str, Any], output_dir: str) -> dict[str, Any]:
     return config
 
 
-def run_one(workflow_id: str, workflow: dict[str, Any], live: bool, output_dir: str) -> dict[str, Any]:
+def run_one(
+    workflow_id: str, workflow: dict[str, Any], live: bool, output_dir: str
+) -> dict[str, Any]:
     """Run a single workflow and return its JSONL log entry."""
     mode = str(workflow.get("mode", "briefing"))
     example_config = str(workflow.get("example_config", ""))
@@ -178,7 +180,9 @@ def run_one(workflow_id: str, workflow: dict[str, Any], live: bool, output_dir: 
     started = datetime.now(timezone.utc)
     try:
         config = load_runtime_config(ROOT / example_config)
-        config = _live_config(config, output_dir) if live else _offline_config(config, mode, output_dir)
+        config = (
+            _live_config(config, output_dir) if live else _offline_config(config, mode, output_dir)
+        )
         result = run_workflow(config, mode=mode, run_id=run_id)
         entry["status"] = result.get("status")
         entry["stats"] = result.get("statistics")
@@ -187,9 +191,9 @@ def run_one(workflow_id: str, workflow: dict[str, Any], live: bool, output_dir: 
         if entry["status"] == "failed":
             entry["outcome"] = "fail"
             entry["error_type"] = "WorkflowFailed"
-            entry["error_message"] = "; ".join(
-                str(e.get("message", e)) for e in errors
-            ) or "status=failed"
+            entry["error_message"] = (
+                "; ".join(str(e.get("message", e)) for e in errors) or "status=failed"
+            )
         else:
             entry["outcome"] = "pass"
     except Exception as exc:  # noqa: BLE001 - smoke test records every failure
@@ -198,18 +202,33 @@ def run_one(workflow_id: str, workflow: dict[str, Any], live: bool, output_dir: 
         entry["error_message"] = str(exc)
         entry["traceback"] = traceback.format_exc()
     finally:
-        entry["duration_s"] = round(
-            (datetime.now(timezone.utc) - started).total_seconds(), 2
-        )
+        entry["duration_s"] = round((datetime.now(timezone.utc) - started).total_seconds(), 2)
     return entry
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Workflow smoke-test harness")
-    parser.add_argument("--live", action="store_true", help="Real fetch + LLM + market data (email still disabled)")
-    parser.add_argument("--only", action="append", default=[], metavar="WORKFLOW_ID", help="Run only these workflow ids (repeatable)")
-    parser.add_argument("--log-path", type=Path, default=ROOT / "logs" / "workflow_smoke.jsonl", help="JSONL log destination")
-    parser.add_argument("--alert-on-fail", action="store_true", help="On any failure, record an alert and fire ECON_NEWS_ALERT_CMD if set")
+    parser.add_argument(
+        "--live", action="store_true", help="Real fetch + LLM + market data (email still disabled)"
+    )
+    parser.add_argument(
+        "--only",
+        action="append",
+        default=[],
+        metavar="WORKFLOW_ID",
+        help="Run only these workflow ids (repeatable)",
+    )
+    parser.add_argument(
+        "--log-path",
+        type=Path,
+        default=ROOT / "logs" / "workflow_smoke.jsonl",
+        help="JSONL log destination",
+    )
+    parser.add_argument(
+        "--alert-on-fail",
+        action="store_true",
+        help="On any failure, record an alert and fire ECON_NEWS_ALERT_CMD if set",
+    )
     return parser
 
 
@@ -224,7 +243,10 @@ def main() -> int:
     workflows = registry.get("workflows", {})
     selected = {k: v for k, v in workflows.items() if not args.only or k in set(args.only)}
     if not selected:
-        print(f"No matching workflows (only={args.only}); available: {list(workflows)}", file=sys.stderr)
+        print(
+            f"No matching workflows (only={args.only}); available: {list(workflows)}",
+            file=sys.stderr,
+        )
         return 2
 
     output_dir = tempfile.mkdtemp(prefix="workflow-smoke-")
@@ -244,8 +266,15 @@ def main() -> int:
             entry = run_one(workflow_id, workflow, args.live, output_dir)
             append_log(args.log_path, entry)
             marker = "PASS" if entry["outcome"] == "pass" else "FAIL"
-            detail = f" status={entry['status']}" if entry["outcome"] == "pass" else f" {entry['error_type']}: {entry['error_message']}"
-            print(f"[{marker}] {workflow_id} ({entry['mode']}, {entry['duration_s']}s){detail}", file=sys.stderr)
+            detail = (
+                f" status={entry['status']}"
+                if entry["outcome"] == "pass"
+                else f" {entry['error_type']}: {entry['error_message']}"
+            )
+            print(
+                f"[{marker}] {workflow_id} ({entry['mode']}, {entry['duration_s']}s){detail}",
+                file=sys.stderr,
+            )
             if entry["outcome"] != "pass":
                 failures += 1
                 failed_ids.append(workflow_id)

@@ -27,11 +27,12 @@ def assess_grounding_status(title: str, summary: str) -> str:
 
     title_compact = " ".join(str(title or "").split()).lower()
     is_boilerplate = any(
-        re.search(pattern, lowered, flags=re.IGNORECASE)
-        for pattern in BOILERPLATE_PATTERNS
+        re.search(pattern, lowered, flags=re.IGNORECASE) for pattern in BOILERPLATE_PATTERNS
     )
-    if compact.lower() == title_compact or len(compact) < 40 or (
-        len(compact) < 220 and is_boilerplate
+    if (
+        compact.lower() == title_compact
+        or len(compact) < 40
+        or (len(compact) < 220 and is_boilerplate)
     ):
         return "insufficient_source_context"
 

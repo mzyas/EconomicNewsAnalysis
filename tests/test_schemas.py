@@ -30,9 +30,7 @@ class SchemaTests(unittest.TestCase):
                 "none",
             ],
         )
-        for field in (
-            "pipeline_status", "output_status", "delivery_status", "delivery_kind"
-        ):
+        for field in ("pipeline_status", "output_status", "delivery_status", "delivery_kind"):
             self.assertIn(field, schema["required"])
 
     def test_runtime_output_validates(self):

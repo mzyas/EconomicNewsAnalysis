@@ -61,8 +61,7 @@ def _trim_news_cell(cell: str) -> str:
     """Keep the title, source and timestamp clauses; drop the summary prose."""
     clauses = _split_clauses(cell)
     kept = [
-        c for i, c in enumerate(clauses)
-        if i == 0 or c.lstrip().startswith("来源：") or "🕒" in c
+        c for i, c in enumerate(clauses) if i == 0 or c.lstrip().startswith("来源：") or "🕒" in c
     ]
     return "；".join(kept) if kept else cell
 
@@ -77,7 +76,7 @@ def _sub_outside_links(text: str, old: str, new: str) -> str:
     out: list[str] = []
     pos = 0
     for m in _LINK_RE.finditer(text):
-        out.append(text[pos:m.start()].replace(old, new))
+        out.append(text[pos : m.start()].replace(old, new))
         out.append(m.group(0))
         pos = m.end()
     out.append(text[pos:].replace(old, new))
@@ -166,8 +165,7 @@ def _strip_trend_section(text: str) -> str:
             while i < len(lines):
                 s = lines[i].strip()
                 italic = (
-                    s.startswith("*") and s.endswith("*")
-                    and not s.startswith("**") and len(s) > 1
+                    s.startswith("*") and s.endswith("*") and not s.startswith("**") and len(s) > 1
                 )
                 if s.startswith("|"):
                     seen_table = True
@@ -222,12 +220,16 @@ def md_to_html(text: str) -> str:
         # Table
         if "|" in line and line.strip().startswith("|"):
             if not in_table:
-                html_lines.append('<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">')
+                html_lines.append(
+                    '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">'
+                )
                 html_lines.append("<thead>")
                 in_table = True
                 # First row is header
                 cells = _split_md_row(line)
-                html_lines.append("<tr>" + "".join(f"<th>{inline_format(c)}</th>" for c in cells) + "</tr>")
+                html_lines.append(
+                    "<tr>" + "".join(f"<th>{inline_format(c)}</th>" for c in cells) + "</tr>"
+                )
                 html_lines.append("</thead><tbody>")
                 i += 1
                 # Skip separator row (|---|---|)
@@ -237,7 +239,9 @@ def md_to_html(text: str) -> str:
             else:
                 # Data row
                 cells = _split_md_row(line)
-                html_lines.append("<tr>" + "".join(f"<td>{inline_format(c)}</td>" for c in cells) + "</tr>")
+                html_lines.append(
+                    "<tr>" + "".join(f"<td>{inline_format(c)}</td>" for c in cells) + "</tr>"
+                )
                 i += 1
                 continue
 
@@ -346,14 +350,18 @@ def build_combined_email_html(
         if r.get("status") == "failed":
             trend_rows_html += (
                 f"<tr style='border-bottom:1px solid #f0f0f0;'>"
-                f"<td style='padding:7px 6px;font-weight:500;'>{r.get('name','')}</td>"
+                f"<td style='padding:7px 6px;font-weight:500;'>{r.get('name', '')}</td>"
                 f"<td colspan='5' style='padding:7px 6px;text-align:left;color:#999;'"
                 f">⚠ {r.get('error') or '数据获取失败'}</td></tr>"
             )
             continue
         name_en = r.get("name", "")
         name_cn = r.get("name_zh") or ""
-        name_display = f"{name_en}<br><span style='font-size:11px;color:#888;font-weight:400;'>{name_cn}</span>" if name_cn else name_en
+        name_display = (
+            f"{name_en}<br><span style='font-size:11px;color:#888;font-weight:400;'>{name_cn}</span>"
+            if name_cn
+            else name_en
+        )
         price = _fmt_price(r.get("last_price"), r.get("display_precision", 2))
         d1 = _fmt_change(r.get("change_1d"), r.get("unit_1d", "%"))
         w1 = _fmt_change(r.get("change_1w"), r.get("unit_1w", "%"))
@@ -403,7 +411,7 @@ def build_combined_email_html(
     {trend_rows_html}
   </tbody>
 </table>
-<p style="margin:8px 0 0;font-size:11px;color:#999;">数据截至 {as_of or '--'}</p>
+<p style="margin:8px 0 0;font-size:11px;color:#999;">数据截至 {as_of or "--"}</p>
 {briefing_html_section}
 <p style="margin:0;font-size:11px;color:#999;">
   由 Economic News Analysis v{version} 自动生成 ·
@@ -447,9 +455,7 @@ def build_mml(
     attachment_parts = []
     for index, attachment in enumerate(resolved_attachments):
         name = attach_name if index == 0 and attach_name else attachment.name
-        attachment_parts.append(
-            f'<#part filename="{attachment.resolve()}" name="{name}"><#/part>'
-        )
+        attachment_parts.append(f'<#part filename="{attachment.resolve()}" name="{name}"><#/part>')
     attachment_mml = "\n".join(attachment_parts)
 
     mml = f"""From: {from_addr}

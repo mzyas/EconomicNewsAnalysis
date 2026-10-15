@@ -87,10 +87,7 @@ def build_market_context(config: dict[str, Any]) -> dict[str, Any]:
         provider_name = str(market_data.get("provider") or data["provider"])
         period = str(market_data.get("period") or defaults.get("period") or "5d")
         interval = str(market_data.get("interval") or defaults.get("interval") or "1d")
-        symbols = [
-            _market_symbol_from_mapping(item)
-            for item in data.get("symbols", [])
-        ]
+        symbols = [_market_symbol_from_mapping(item) for item in data.get("symbols", [])]
         # A broken watchlist must not take the trend table down with it.
         watchlist_path = market_data.get("watchlist_config")
         if watchlist_path:
@@ -125,7 +122,8 @@ def build_market_context(config: dict[str, Any]) -> dict[str, Any]:
         provider=provider_name,
         status=status,
         snapshots=snapshots,
-        errors=watchlist_errors + [
+        errors=watchlist_errors
+        + [
             {
                 "symbol_id": snapshot.symbol_id,
                 "type": "MarketDataSnapshotError",

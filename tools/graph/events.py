@@ -26,9 +26,7 @@ def record_event(
     """
 
     if status not in _VALID_STATUSES:
-        raise ValueError(
-            f"status must be one of {sorted(_VALID_STATUSES)}, got {status!r}"
-        )
+        raise ValueError(f"status must be one of {sorted(_VALID_STATUSES)}, got {status!r}")
     events: list[dict[str, Any]] = list(state.get("_events", []))
     started_at = _now_iso()
     events.append(

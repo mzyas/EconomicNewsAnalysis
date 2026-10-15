@@ -25,10 +25,12 @@ class FetchEvidenceTests(unittest.TestCase):
     def test_http_200_returns_extracted_text(self, mock_get):
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.iter_content.return_value = [(
-            b"<html><head><title>News</title></head>"
-            b"<body><article>Federal Reserve raised rates by 25bps.</article></body></html>"
-        )]
+        mock_response.iter_content.return_value = [
+            (
+                b"<html><head><title>News</title></head>"
+                b"<body><article>Federal Reserve raised rates by 25bps.</article></body></html>"
+            )
+        ]
         mock_response.apparent_encoding = "utf-8"
         mock_get.return_value = mock_response
 

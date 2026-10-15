@@ -48,6 +48,7 @@ def _recency_delta(published_at: Any, now: datetime | None = None) -> tuple[floa
         return -0.12, "发布超一月降权"
     return -0.20, "陈旧内容降权"
 
+
 HIGH_SIGNAL_TAGS = {
     "monetary_policy",
     "interest_rate",
@@ -102,11 +103,9 @@ def _matches_any(text: str, patterns: tuple[str, ...]) -> bool:
 
 def _is_discovery_item(item: dict[str, Any]) -> bool:
     discovery = item.get("discovery", {})
-    return (
-        isinstance(discovery, dict) and discovery.get("channel") == "google_news"
-    ) or str(item.get("source", {}).get("id", "")).startswith(
-        DISCOVERY_SOURCE_PREFIXES
-    )
+    return (isinstance(discovery, dict) and discovery.get("channel") == "google_news") or str(
+        item.get("source", {}).get("id", "")
+    ).startswith(DISCOVERY_SOURCE_PREFIXES)
 
 
 def score_item(item: dict[str, Any], focus_assets: list[str] | None = None) -> dict[str, Any]:
@@ -148,9 +147,7 @@ def score_item(item: dict[str, Any], focus_assets: list[str] | None = None) -> d
         score -= 0.2
         reasons.append("来源上下文不足")
 
-    matched_assets = [
-        asset for asset in focus_assets if str(asset).lower() in text
-    ]
+    matched_assets = [asset for asset in focus_assets if str(asset).lower() in text]
     if matched_assets:
         score += min(0.15, 0.05 * len(matched_assets))
         reasons.append(f"匹配关注资产: {', '.join(matched_assets)}")
@@ -188,26 +185,19 @@ def rank_items(
     discovery_candidates = [
         item
         for item in ranked
-        if _is_discovery_item(item)
-        and item["relevance_score"] >= MIN_DISCOVERY_SCORE
+        if _is_discovery_item(item) and item["relevance_score"] >= MIN_DISCOVERY_SCORE
     ]
     target_discovery = min(4, max(1, limit // 3), len(discovery_candidates))
     selected_ids = {item["id"] for item in selected}
-    selected_discovery = [
-        item
-        for item in selected
-        if _is_discovery_item(item)
-    ]
+    selected_discovery = [item for item in selected if _is_discovery_item(item)]
     missing = target_discovery - len(selected_discovery)
     if missing > 0:
-        additions = [
-            item for item in discovery_candidates if item["id"] not in selected_ids
-        ][:missing]
-        replaceable = [
-            item
-            for item in reversed(selected)
-            if not _is_discovery_item(item)
-        ][:len(additions)]
+        additions = [item for item in discovery_candidates if item["id"] not in selected_ids][
+            :missing
+        ]
+        replaceable = [item for item in reversed(selected) if not _is_discovery_item(item)][
+            : len(additions)
+        ]
         replace_ids = {item["id"] for item in replaceable}
         selected = [item for item in selected if item["id"] not in replace_ids]
         for item in additions:

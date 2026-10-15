@@ -43,8 +43,7 @@ def normalize_news_item(item: dict[str, Any]) -> dict[str, Any]:
         "url": link,
         "summary": summary,
         "published_at": _text(item.get("published") or item.get("published_at")),
-        "fetched_at": _text(item.get("fetched_at"))
-        or datetime.now(timezone.utc).isoformat(),
+        "fetched_at": _text(item.get("fetched_at")) or datetime.now(timezone.utc).isoformat(),
         "source": {
             "id": source_id,
             "name": _text(item.get("source_name") or item.get("source")),

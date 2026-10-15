@@ -65,9 +65,7 @@ def _anchored(key: str, value: Any, base: Path) -> Path | None:
             return None
     candidate = base / path
     if not candidate.resolve().is_relative_to(base.resolve()):
-        raise ValueError(
-            f"{key} must remain inside the profile data directory ({base})"
-        )
+        raise ValueError(f"{key} must remain inside the profile data directory ({base})")
     return candidate
 
 

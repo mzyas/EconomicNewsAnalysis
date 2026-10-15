@@ -18,6 +18,7 @@ from .prompts import (
     QUALITY_GATE_PROMPT,
     RESEARCH_PROMPT,
 )
+
 logger = logging.getLogger(__name__)
 
 
@@ -134,8 +135,10 @@ class ResearchAdapter:
         )
         provider = str(getattr(response, "provider", "") or "")
         model = str(getattr(response, "model", "") or "")
-        if expected and self._strict_model_routes and (
-            provider != expected["provider"] or model != expected["model"]
+        if (
+            expected
+            and self._strict_model_routes
+            and (provider != expected["provider"] or model != expected["model"])
         ):
             raise RuntimeError(
                 "Unexpected LLM route: "
@@ -147,6 +150,7 @@ class ResearchAdapter:
         if isinstance(content, list):
             return "".join(str(part) for part in content)
         return str(content)
+
     def analyze(
         self,
         title: str,
@@ -297,9 +301,7 @@ class ResearchAdapter:
         """
         if not signals_digest.strip():
             return {}
-        prompt = MARKET_IMPACT_PROMPT.format(
-            signals_digest=signals_digest, language=language
-        )
+        prompt = MARKET_IMPACT_PROMPT.format(signals_digest=signals_digest, language=language)
         try:
             raw = self._invoke(prompt, node="market_impact")
         except Exception:
@@ -323,9 +325,7 @@ class ResearchAdapter:
         """
         if not official_digest.strip():
             return {}
-        prompt = MACRO_BACKGROUND_PROMPT.format(
-            official_digest=official_digest, language=language
-        )
+        prompt = MACRO_BACKGROUND_PROMPT.format(official_digest=official_digest, language=language)
         try:
             raw = self._invoke(prompt, node="macro_background")
         except Exception:

@@ -43,4 +43,3 @@ def write_markdown_artifact(output_dir: Path, topic: str, markdown: str) -> Path
     path = output_dir / f"{_slug(topic)}_{stamp}.md"
     path.write_text(markdown, encoding="utf-8")
     return path
-

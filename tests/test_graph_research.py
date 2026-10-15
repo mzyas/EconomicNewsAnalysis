@@ -130,9 +130,7 @@ class ResearchAdapterAnalyzeTests(unittest.TestCase):
         result = adapter.analyze(
             title="Some title",
             source_context={"title": "Some title"},
-            evidence=[
-                {"url": "https://x", "content": None, "error": "404", "truncated": False}
-            ],
+            evidence=[{"url": "https://x", "content": None, "error": "404", "truncated": False}],
             relevance_score=0.1,
             language="zh-CN",
         )
@@ -141,9 +139,7 @@ class ResearchAdapterAnalyzeTests(unittest.TestCase):
         self.assertTrue(fake.calls)
 
     def test_analyze_returns_structured_error_on_llm_failure(self):
-        fake = _RecordingFakeLLM(
-            response_text="", raise_exc=RuntimeError("boom")
-        )
+        fake = _RecordingFakeLLM(response_text="", raise_exc=RuntimeError("boom"))
         adapter = ResearchAdapter()
         adapter.set_fake_llm(fake)
 
@@ -205,9 +201,7 @@ class ResearchAdapterResearchTests(unittest.TestCase):
         self.assertEqual(len(fake.calls), 1)
 
     def test_research_returns_structured_error_on_llm_failure(self):
-        fake = _RecordingFakeLLM(
-            response_text="", raise_exc=RuntimeError("api down")
-        )
+        fake = _RecordingFakeLLM(response_text="", raise_exc=RuntimeError("api down"))
         adapter = ResearchAdapter()
         adapter.set_fake_llm(fake)
 
@@ -247,9 +241,7 @@ class ResearchAdapterQualityCheckTests(unittest.TestCase):
         self.assertIsNone(result["error"])
 
     def test_quality_check_fails_when_no_evidence(self):
-        fake = _RecordingFakeLLM(
-            response_text=json.dumps({"verdict": "FAIL", "reason": "无证据"})
-        )
+        fake = _RecordingFakeLLM(response_text=json.dumps({"verdict": "FAIL", "reason": "无证据"}))
         adapter = ResearchAdapter()
         adapter.set_fake_llm(fake)
 
@@ -263,16 +255,21 @@ class ResearchAdapterQualityCheckTests(unittest.TestCase):
         self.assertEqual(len(fake.calls), 0)
 
     def test_quality_check_returns_structured_error_on_llm_failure(self):
-        fake = _RecordingFakeLLM(
-            response_text="", raise_exc=RuntimeError("rate limit")
-        )
+        fake = _RecordingFakeLLM(response_text="", raise_exc=RuntimeError("rate limit"))
         adapter = ResearchAdapter()
         adapter.set_fake_llm(fake)
 
         result = adapter.quality_check(
             title="Title",
             analysis="claim",
-            evidence=[{"url": "u", "content": "Federal Reserve raised rates", "error": None, "truncated": False}],
+            evidence=[
+                {
+                    "url": "u",
+                    "content": "Federal Reserve raised rates",
+                    "error": None,
+                    "truncated": False,
+                }
+            ],
         )
 
         self.assertIsNone(result["verdict"])
@@ -291,12 +288,14 @@ class ResearchAdapterEnvironmentTests(unittest.TestCase):
             result = adapter.analyze(
                 title="Title",
                 source_context={"title": "Title"},
-                evidence=[{
-                    "url": "u",
-                    "content": "Federal Reserve raised rates by 25bps.",
-                    "error": None,
-                    "truncated": False,
-                }],
+                evidence=[
+                    {
+                        "url": "u",
+                        "content": "Federal Reserve raised rates by 25bps.",
+                        "error": None,
+                        "truncated": False,
+                    }
+                ],
                 relevance_score=0.5,
                 language="zh-CN",
             )
@@ -350,9 +349,7 @@ class ResearchAdapterHermesFacadeTests(unittest.TestCase):
         self.assertIn("requires Hermes ctx.llm", str(ctx.exception))
 
     def test_fake_llm_keeps_unit_tests_offline(self):
-        fake = _RecordingFakeLLM(
-            response_text=json.dumps({"signals": ["s"], "analysis": "a"})
-        )
+        fake = _RecordingFakeLLM(response_text=json.dumps({"signals": ["s"], "analysis": "a"}))
         adapter = ResearchAdapter()
         adapter.set_fake_llm(fake)
         result = adapter.analyze(
@@ -363,6 +360,7 @@ class ResearchAdapterHermesFacadeTests(unittest.TestCase):
         )
         self.assertEqual(result["signals"], ["s"])
         self.assertEqual(len(fake.calls), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

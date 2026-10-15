@@ -9,12 +9,8 @@ from .feed_fetcher_core import Source, fetch_all, load_config
 
 
 def filter_sources(sources: list[Source], filters: dict[str, Any]) -> list[Source]:
-    countries = {
-        str(value).upper() for value in filters.get("countries", []) if value
-    }
-    languages = {
-        str(value).lower() for value in filters.get("languages", []) if value
-    }
+    countries = {str(value).upper() for value in filters.get("countries", []) if value}
+    languages = {str(value).lower() for value in filters.get("languages", []) if value}
     tags = {str(value).lower() for value in filters.get("tags", []) if value}
     source_ids = {str(value) for value in filters.get("source_ids", []) if value}
 

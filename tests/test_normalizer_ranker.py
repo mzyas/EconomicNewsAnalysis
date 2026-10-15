@@ -94,15 +94,9 @@ class NormalizerRankerTests(unittest.TestCase):
             ["Gold"],
             12,
         )
-        discovery = [
-            item
-            for item in ranked
-            if item["source"]["id"].startswith("google_news_")
-        ]
+        discovery = [item for item in ranked if item["source"]["id"].startswith("google_news_")]
         self.assertEqual(len(discovery), 4)
-        self.assertTrue(
-            any("来源多样性保留" in item["ranking_reasons"] for item in discovery)
-        )
+        self.assertTrue(any("来源多样性保留" in item["ranking_reasons"] for item in discovery))
 
     def test_thin_source_context_is_penalized(self):
         thin = {
@@ -129,7 +123,6 @@ class NormalizerRankerTests(unittest.TestCase):
         ranked = rank_items(normalize_news_items([thin, substantive]))
         self.assertEqual(ranked[0]["title"], substantive["title"])
         self.assertIn("来源上下文不足", ranked[1]["ranking_reasons"])
-
 
     def test_japanese_current_signal_is_scored(self):
         ja_item = {
@@ -182,9 +175,7 @@ class NormalizerRankerTests(unittest.TestCase):
         # Only CN items exist; a cap of 2 must still backfill up to the limit.
         balanced = balance_by_country(items, {"CN": 2, "default": 99}, limit=4)
         self.assertEqual(len(balanced), 4)
-        self.assertTrue(
-            any("国家配额回填" in item["ranking_reasons"] for item in balanced)
-        )
+        self.assertTrue(any("国家配额回填" in item["ranking_reasons"] for item in balanced))
 
     def test_balance_by_country_noop_without_quota(self):
         items = [{"id": "a", "source": {"country": "CN"}, "ranking_reasons": []}]

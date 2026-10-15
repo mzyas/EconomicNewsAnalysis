@@ -48,9 +48,7 @@ class DailyEmailProfileConfigTests(TestCase):
 
         schema = ctx.registration["schema"]
         self.assertEqual(schema["required"], [])
-        self.assertEqual(
-            schema["properties"]["profile_config"]["enum"], ["daily_email"]
-        )
+        self.assertEqual(schema["properties"]["profile_config"]["enum"], ["daily_email"])
         self.assertNotIn("config_path", schema["properties"])
 
     def test_delivery_requires_fixed_profile_but_allows_empty_text(self) -> None:
@@ -63,9 +61,7 @@ class DailyEmailProfileConfigTests(TestCase):
             ctx.registration["handler"]({"run_mode": "deliver"})
 
         expected = {"status": "success", "llm_audit": []}
-        with mock.patch.object(
-            plugin, "run_langgraph_workflow", return_value=expected
-        ) as workflow:
+        with mock.patch.object(plugin, "run_langgraph_workflow", return_value=expected) as workflow:
             result = json.loads(
                 ctx.registration["handler"](
                     {"run_mode": "deliver", "profile_config": "daily_email"}
@@ -73,9 +69,7 @@ class DailyEmailProfileConfigTests(TestCase):
             )
 
         self.assertEqual(result, expected)
-        workflow.assert_called_once_with(
-            ctx, "", run_mode="deliver", profile_config="daily_email"
-        )
+        workflow.assert_called_once_with(ctx, "", run_mode="deliver", profile_config="daily_email")
 
     def test_profile_file_must_resolve_inside_project_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -84,9 +78,7 @@ class DailyEmailProfileConfigTests(TestCase):
             template.write_text("{}\n", encoding="utf-8")
 
             with patch.object(hermes_plugin, "ROOT", root):
-                self.assertEqual(
-                    hermes_plugin.resolve_profile_config("daily_email"), template
-                )
+                self.assertEqual(hermes_plugin.resolve_profile_config("daily_email"), template)
 
     def test_profile_mapping_cannot_escape_project_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -94,10 +86,13 @@ class DailyEmailProfileConfigTests(TestCase):
             outside = root.parent / "outside.yaml"
             outside.write_text("{}\n", encoding="utf-8")
             try:
-                with patch.object(hermes_plugin, "ROOT", root), patch.object(
-                    hermes_plugin,
-                    "_PROFILE_CONFIG_FILENAMES",
-                    {"daily_email": "../outside.yaml"},
+                with (
+                    patch.object(hermes_plugin, "ROOT", root),
+                    patch.object(
+                        hermes_plugin,
+                        "_PROFILE_CONFIG_FILENAMES",
+                        {"daily_email": "../outside.yaml"},
+                    ),
                 ):
                     with self.assertRaisesRegex(ValueError, "must remain inside"):
                         hermes_plugin.resolve_profile_config("daily_email")
@@ -111,11 +106,12 @@ class DailyEmailProfileConfigTests(TestCase):
         )
         runtime_config = {"mode": "deliver"}
         expected = {"status": "success"}
-        with patch.object(
-            hermes_plugin, "load_runtime_config", return_value=runtime_config
-        ) as loader, patch.object(
-            hermes_plugin, "run_workflow", return_value=expected
-        ) as workflow:
+        with (
+            patch.object(
+                hermes_plugin, "load_runtime_config", return_value=runtime_config
+            ) as loader,
+            patch.object(hermes_plugin, "run_workflow", return_value=expected) as workflow,
+        ):
             result = hermes_plugin.run_langgraph_workflow(
                 ctx,
                 "",
@@ -160,8 +156,9 @@ class DailyEmailProfileConfigTests(TestCase):
             root = Path(temp_dir) / "plugin"
             fake_constants = SimpleNamespace(get_hermes_home=lambda: home)
             config = {"log_path": str(root / "logs" / "daily-workflow.jsonl")}
-            with patch.dict(sys.modules, {"hermes_constants": fake_constants}), patch.object(
-                hermes_plugin, "ROOT", root
+            with (
+                patch.dict(sys.modules, {"hermes_constants": fake_constants}),
+                patch.object(hermes_plugin, "ROOT", root),
             ):
                 hermes_plugin.anchor_profile_paths(config)
 
@@ -179,8 +176,9 @@ class DailyEmailProfileConfigTests(TestCase):
             legacy.write_text('{"run_id": "old"}\n', encoding="utf-8")
             fake_constants = SimpleNamespace(get_hermes_home=lambda: home)
             target = self._data_dir(home) / "logs" / "daily-workflow.jsonl"
-            with patch.dict(sys.modules, {"hermes_constants": fake_constants}), patch.object(
-                hermes_plugin, "ROOT", root
+            with (
+                patch.dict(sys.modules, {"hermes_constants": fake_constants}),
+                patch.object(hermes_plugin, "ROOT", root),
             ):
                 hermes_plugin.anchor_profile_paths({"log_path": str(legacy)})
                 self.assertEqual(target.read_text(encoding="utf-8"), '{"run_id": "old"}\n')
@@ -200,8 +198,9 @@ class DailyEmailProfileConfigTests(TestCase):
             elsewhere = str(Path(temp_dir) / "elsewhere")
             config = {"output_dir": elsewhere, "log_path": elsewhere + ".jsonl"}
             missing: dict = {"output_dir": None}
-            with patch.dict(sys.modules, {"hermes_constants": fake_constants}), patch.object(
-                hermes_plugin, "ROOT", root
+            with (
+                patch.dict(sys.modules, {"hermes_constants": fake_constants}),
+                patch.object(hermes_plugin, "ROOT", root),
             ):
                 hermes_plugin.anchor_profile_paths(config)
                 hermes_plugin.anchor_profile_paths(missing)
@@ -219,8 +218,9 @@ class DailyEmailProfileConfigTests(TestCase):
                 {"output_dir": "output/../../../shared"},
                 {"log_path": str(root / ".." / "shared" / "daily-workflow.jsonl")},
             )
-            with patch.dict(sys.modules, {"hermes_constants": fake_constants}), patch.object(
-                hermes_plugin, "ROOT", root
+            with (
+                patch.dict(sys.modules, {"hermes_constants": fake_constants}),
+                patch.object(hermes_plugin, "ROOT", root),
             ):
                 for config in cases:
                     with self.subTest(config=config):
@@ -236,8 +236,9 @@ class DailyEmailProfileConfigTests(TestCase):
             bundled.write_text("symbols: []\n", encoding="utf-8")
             fake_constants = SimpleNamespace(get_hermes_home=lambda: home)
             target = self._data_dir(home) / "stock_watchlist.yaml"
-            with patch.dict(sys.modules, {"hermes_constants": fake_constants}), patch.object(
-                hermes_plugin, "ROOT", root
+            with (
+                patch.dict(sys.modules, {"hermes_constants": fake_constants}),
+                patch.object(hermes_plugin, "ROOT", root),
             ):
                 config = {"market_data": {"watchlist_config": str(bundled)}}
                 hermes_plugin.anchor_profile_paths(config)
@@ -263,8 +264,9 @@ class DailyEmailProfileConfigTests(TestCase):
                 {"market_data": {"watchlist_config": None}},
                 {"market_data": {"watchlist_config": str(root / "sources" / "missing.yaml")}},
             )
-            with patch.dict(sys.modules, {"hermes_constants": fake_constants}), patch.object(
-                hermes_plugin, "ROOT", root
+            with (
+                patch.dict(sys.modules, {"hermes_constants": fake_constants}),
+                patch.object(hermes_plugin, "ROOT", root),
             ):
                 for config in configs:
                     expected = json.loads(json.dumps(config))
@@ -289,16 +291,20 @@ class DailyEmailProfileConfigTests(TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             home = Path(temp_dir)
             fake_constants = SimpleNamespace(get_hermes_home=lambda: home)
-            with patch.dict(sys.modules, {"hermes_constants": fake_constants}), patch.object(
-                hermes_plugin,
-                "load_runtime_config",
-                return_value={
-                    "output_dir": "output/daily-email-output/",
-                    "log_path": str(hermes_plugin.ROOT / "logs" / "daily-workflow.jsonl"),
-                },
-            ), patch.object(
-                hermes_plugin, "run_workflow", return_value={"status": "success"}
-            ) as workflow:
+            with (
+                patch.dict(sys.modules, {"hermes_constants": fake_constants}),
+                patch.object(
+                    hermes_plugin,
+                    "load_runtime_config",
+                    return_value={
+                        "output_dir": "output/daily-email-output/",
+                        "log_path": str(hermes_plugin.ROOT / "logs" / "daily-workflow.jsonl"),
+                    },
+                ),
+                patch.object(
+                    hermes_plugin, "run_workflow", return_value={"status": "success"}
+                ) as workflow,
+            ):
                 hermes_plugin.run_langgraph_workflow(
                     ctx, "", run_mode="deliver", profile_config="daily_email"
                 )

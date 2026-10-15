@@ -15,5 +15,4 @@ class MarketDataProvider(Protocol):
         symbols: list[MarketSymbol],
         period: str,
         interval: str,
-    ) -> list[MarketSnapshot]:
-        ...
+    ) -> list[MarketSnapshot]: ...

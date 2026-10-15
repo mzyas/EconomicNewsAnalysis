@@ -35,9 +35,7 @@ def movers_enabled(config: dict[str, Any]) -> bool:
     return bool(_movers_config(config).get("enabled", True))
 
 
-def select_movers(
-    snapshots: list[dict[str, Any]], config: dict[str, Any]
-) -> list[dict[str, Any]]:
+def select_movers(snapshots: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
     """Return the snapshots whose 1-day or 1-week move crosses a threshold.
 
     Only successful ``price`` snapshots of the configured asset classes are

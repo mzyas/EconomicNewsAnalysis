@@ -88,7 +88,9 @@ def enrich_google_news_items(
                 except AttributeError:
                     pass
                 final_url = response.geturl()
-                raw = response.read().decode(response.headers.get_content_charset() or "utf-8", errors="replace")
+                raw = response.read().decode(
+                    response.headers.get_content_charset() or "utf-8", errors="replace"
+                )
             parser = _PageMetadataParser()
             parser.feed(raw)
             summary = _page_summary(parser)
@@ -111,7 +113,13 @@ def enrich_google_news_items(
             message = str(exc)
             discovery["verification_status"] = "unverified"
             discovery["error"] = message
-            errors.append({"id": str(updated.get("id", "")), "name": str(updated.get("title", "")), "error": message})
+            errors.append(
+                {
+                    "id": str(updated.get("id", "")),
+                    "name": str(updated.get("title", "")),
+                    "error": message,
+                }
+            )
         updated["discovery"] = discovery
         enriched.append(updated)
     return enriched, errors

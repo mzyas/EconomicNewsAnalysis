@@ -30,9 +30,7 @@ class HermesLLMRoutingTests(unittest.TestCase):
     def test_public_result_exposes_llm_audit(self) -> None:
         config = {"mode": "analyze", "_skill": {"name": "test", "version": "1"}}
         state = initial_state(config)
-        state["llm_audit"] = [
-            {"node": "analysis", "provider": "openrouter", "model": "mimo-test"}
-        ]
+        state["llm_audit"] = [{"node": "analysis", "provider": "openrouter", "model": "mimo-test"}]
 
         result = _project_result(state, config)
 
@@ -47,24 +45,27 @@ class HermesLLMRoutingTests(unittest.TestCase):
         )
         ctx = SimpleNamespace(
             llm=llm,
-            get_config=lambda name, default=None: {
-                "analysis": {
-                    "provider": "openrouter",
-                    "model": "xiaomi/mimo-v2-flash",
+            get_config=lambda name, default=None: (
+                {
+                    "analysis": {
+                        "provider": "openrouter",
+                        "model": "xiaomi/mimo-v2-flash",
+                    }
                 }
-            } if name == "model_routes" else default,
+                if name == "model_routes"
+                else default
+            ),
         )
         config = load_runtime_config()
         config["fetch_enabled"] = False
         config["market_data"]["enabled"] = False
         config["graph"]["checkpoint_path"] = None
 
-        result = run_langgraph_workflow(
-            ctx, "A central bank held rates steady.", config=config
-        )
+        result = run_langgraph_workflow(ctx, "A central bank held rates steady.", config=config)
 
         self.assertEqual(result["llm_audit"][0]["node"], "analysis")
         self.assertEqual(result["llm_audit"][0]["model"], "xiaomi/mimo-v2-flash")
+
     def test_explicit_node_route_uses_facade_and_records_actual_route(self) -> None:
         llm = _HermesLLM(
             json.dumps({"analysis": "ok", "signals": ["signal"]}),
@@ -91,9 +92,7 @@ class HermesLLMRoutingTests(unittest.TestCase):
         )
 
         self.assertEqual(result["signals"], ["signal"])
-        self.assertEqual(
-            llm.calls[0]["provider"], "openrouter"
-        )
+        self.assertEqual(llm.calls[0]["provider"], "openrouter")
         self.assertEqual(llm.calls[0]["model"], "xiaomi/mimo-v2-flash")
         self.assertEqual(
             audit,
