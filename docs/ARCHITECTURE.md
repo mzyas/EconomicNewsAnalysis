@@ -7,7 +7,7 @@
 ## 1. 项目概览
 
 ```
-economic-news-analysis  v0.8.0
+EconomicNewsAnalysis  v0.8.0
 ├── tools/              → 38 个源文件（含 graph/ 子包 + trend_table.py）
 ├── tests/              → 18 个测试文件
 ├── schemas/            → 7 个 JSON Schema
@@ -391,7 +391,7 @@ fetch_market_data → trend_table → fetch_feeds → movers_news → google_new
 - **标注**：每条新闻带 `mover.trigger`（如 `NVIDIA 日 -6.2% / 周 -9.1%`），渲染时写入表格「主题」列。
 - **板块**：`_item_category` 返回 `movers`，`rank_items_node` 给独立配额 `movers_max_items`，排在其它板块之后；不会混入官方/Google 板块。
 - **个股只触发、不入表**：个股放在独立的 `sources/stock_watchlist.yaml`（`market_data.watchlist_config`），由 `load_stock_watchlist` 补默认值（`asset_class: equity_stock`、`asset_type: price`、`display_precision: 2`）后追加到 `market_sources.yaml` 的标的之后（id 重复的跳过）；`trend_table_node` 过滤 `equity_stock`，趋势表仍是原来的 16 个资产。watchlist 读取或校验失败只记 `WatchlistConfigError`，不影响核心行情。
-- **插件安装后可改**：Hermes 下 `anchor_profile_paths` 首次运行时把内置 watchlist 复制到 `<HERMES_HOME>/plugin-data/economic-news-analysis/stock_watchlist.yaml` 并改读该副本；已存在的副本不会被覆盖，重装插件也不丢；指向插件目录之外的显式路径保持不变。
+- **插件安装后可改**：Hermes 下 `anchor_profile_paths` 首次运行时把内置 watchlist 复制到 `<HERMES_HOME>/plugin-data/EconomicNewsAnalysis/stock_watchlist.yaml` 并改读该副本；已存在的副本不会被覆盖，重装插件也不丢；指向插件目录之外的显式路径保持不变。
 - **降级**：单个查询失败只记入 `errors`（`MoverFetchError`）；节点异常记 `MoverError`，均不中断主流程。`trend` 模式、`fetch_enabled=false`、`movers.enabled=false` 时整体跳过。
 - **限制**：只能抓当前行情窗口内的异动，无法回填历史某天的大跌。
 
@@ -434,7 +434,7 @@ with urllib.request.urlopen(req, timeout=connect_timeout) as resp:
 - 每次调用将实际 `{node, provider, model}` 写入 `llm_audit`；严格模式下，
   显式路由与实际结果不一致即报错。
 
-权限与 allowlist 由 Hermes 的 `plugins.entries.economic-news-analysis.llm`
+权限与 allowlist 由 Hermes 的 `plugins.entries.EconomicNewsAnalysis.llm`
 配置管理，不属于本 skill 的 `skill.yaml`。
 
 ---
@@ -700,7 +700,7 @@ python tools/runtime.py --config examples/daily_briefing.yaml --resume
 `skill.yaml` 定义 Hermes 如何加载和调用本项目：
 
 ```yaml
-name: economic-news-analysis
+name: EconomicNewsAnalysis
 version: 0.8.0
 runtime:
   language: python
@@ -751,13 +751,13 @@ workflows:
 # 每日 JST 9:30 生成趋势表
 hermes cron create \
   --schedule "30 0 * * *" \
-  --skill economic-news-analysis \
+  --skill EconomicNewsAnalysis \
   --config examples/daily_trend.yaml
 
 # 每日 JST 10:00 生成完整简报（含邮件投递）
 hermes cron create \
   --schedule "0 1 * * *" \
-  --skill economic-news-analysis \
+  --skill EconomicNewsAnalysis \
   --config examples/daily_email_briefing.yaml
 ```
 

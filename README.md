@@ -1,4 +1,4 @@
-# economic-news-analysis
+# EconomicNewsAnalysis
 
 A [LangGraph](https://langchain-ai.github.io/langgraph/) pipeline that fetches economic news,
 builds a daily Chinese-language macro briefing (market trend table → 今日资讯主线 lead items →
@@ -58,7 +58,7 @@ The plugin configuration, not this skill, must grant narrow override permissions
 ```yaml
 plugins:
   entries:
-    economic-news-analysis:
+    EconomicNewsAnalysis:
       settings:
         model_routes:
           analysis:
@@ -143,7 +143,7 @@ from the trend table; they live in their own file, `sources/stock_watchlist.yaml
 (`market_data.watchlist_config`; set it to `null` to turn the stocks off).
 
 **Editing the stock list after installing the plugin.** Under Hermes the bundled watchlist is
-copied once to `<HERMES_HOME>/plugin-data/economic-news-analysis/stock_watchlist.yaml`, and the
+copied once to `<HERMES_HOME>/plugin-data/EconomicNewsAnalysis/stock_watchlist.yaml`, and the
 daily email profile reads that copy, so edits there survive reinstalls and upgrades. Each stock
 needs `id`, `ticker` (Yahoo Finance), `name` (used in the news query) and `region`; `name_zh` and
 `currency` are optional. Delete the copy to restore the default list on the next run. A broken

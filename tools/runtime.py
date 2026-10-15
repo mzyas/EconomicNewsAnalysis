@@ -86,7 +86,7 @@ def execute(
         )
     except Exception as exc:
         skill_identity = config.get("_skill") or {
-            "name": "economic-news-analysis",
+            "name": "EconomicNewsAnalysis",
             "version": "unknown",
         }
         mode = config.get("mode", "analyze")
@@ -159,7 +159,7 @@ def _failure_payload(args: argparse.Namespace, exc: Exception) -> dict[str, Any]
         skill_identity = load_runtime_config()["_skill"]
     except Exception:
         skill_identity = {
-            "name": "economic-news-analysis",
+            "name": "EconomicNewsAnalysis",
             "version": "unknown",
         }
     return {

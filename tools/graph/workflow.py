@@ -277,7 +277,7 @@ def _project_result(state: dict[str, Any], config: dict[str, Any]) -> dict[str, 
     public["status"] = public["pipeline_status"]
     public["skill"] = config.get(
         "_skill",
-        {"name": "economic-news-analysis", "version": str(config.get("version", "0.5.0"))},
+        {"name": "EconomicNewsAnalysis", "version": str(config.get("version", "0.5.0"))},
     )
     public["output_language"] = config.get("output_language", "zh-CN")
 

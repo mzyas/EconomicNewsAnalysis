@@ -27,10 +27,10 @@ config path` 显示了不同位置，以该命令的结果为准。
 
 | 来源 | Karl 目标 | 用途 |
 |---|---|---|
-| `skills/economic-news-analysis/SKILL.md` | `skills/economic-news-analysis/SKILL.md` | Agent 使用说明；不含模型配置。 |
-| 项目根 `plugin.yaml`、`__init__.py`、`tools/`、`schemas/`、`sources/`、`workflows.yaml`、`skill.yaml` 与项目运行配置 | `plugins/economic-news-analysis/` | Hermes 原生工具 `run_langgraph_workflow` 和图运行时。 |
+| `skills/EconomicNewsAnalysis/SKILL.md` | `skills/EconomicNewsAnalysis/SKILL.md` | Agent 使用说明；不含模型配置。 |
+| 项目根 `plugin.yaml`、`__init__.py`、`tools/`、`schemas/`、`sources/`、`workflows.yaml`、`skill.yaml` 与项目运行配置 | `plugins/EconomicNewsAnalysis/` | Hermes 原生工具 `run_langgraph_workflow` 和图运行时。 |
 | `pyproject.toml`、`uv.lock` | 插件目录或可访问的源检出目录 | 用于在 Hermes 运行 Python 环境中解析依赖。 |
-| 项目根 `daily_email_briefing.yaml` | `plugins/economic-news-analysis/daily_email_briefing.yaml` | `profile_config: daily_email` 的唯一固定模板；仓库版本无个人信息且 `email.send: false`。 |
+| 项目根 `daily_email_briefing.yaml` | `plugins/EconomicNewsAnalysis/daily_email_briefing.yaml` | `profile_config: daily_email` 的唯一固定模板；仓库版本无个人信息且 `email.send: false`。 |
 
 不要复制 `.venv`、`.git`、测试缓存或任何包含本地凭据的文件。保持文件为 UTF-8
 无 BOM。
@@ -51,12 +51,12 @@ Hermes 只加载插件；不会自动安装 Python 依赖。首次部署时，�
 
 由 Hermes-GPT 在确认 profile 的现有配置结构后完成以下最小配置：
 
-1. 启用 `economic-news-analysis` 原生插件。
-2. 在 `plugins.entries.economic-news-analysis.settings.model_routes` 设置节点路由。
+1. 启用 `EconomicNewsAnalysis` 原生插件。
+2. 在 `plugins.entries.EconomicNewsAnalysis.settings.model_routes` 设置节点路由。
    首次验收建议让 `analysis` 使用 `inherit_cron_model: true`，继承 Cron 主 Agent
    的 GPT 模型。
 3. 只有需要显式节点路由时，才在
-   `plugins.entries.economic-news-analysis.llm` 授予
+   `plugins.entries.EconomicNewsAnalysis.llm` 授予
    `allow_provider_override`、`allow_model_override`，并配置严格 allowlist。
 4. 不在 `SKILL.md`、`skill.yaml`、图配置或环境变量中放置节点专用模型/密钥。
 5. 日报 Cron 只调用 `{ "run_mode": "deliver", "profile_config": "daily_email" }`。

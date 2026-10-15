@@ -132,7 +132,7 @@ def load_runtime_config(
     # tools/_version.py — NOT from skill.yaml — so a bump is one line in
     # pyproject. ``skill.yaml`` may still carry a name but no longer a version.
     config["_skill"] = {
-        "name": skill.get("name", "economic-news-analysis"),
+        "name": skill.get("name", "EconomicNewsAnalysis"),
         "version": _PKG_VERSION,
     }
     return config

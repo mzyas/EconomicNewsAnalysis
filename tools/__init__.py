@@ -1,2 +1,2 @@
-"""Runtime modules for the economic-news-analysis skill."""
+"""Runtime modules for the EconomicNewsAnalysis skill."""
 

@@ -1,4 +1,4 @@
-name: economic-news-analysis
+name: EconomicNewsAnalysis
 version: 0.9.1
 description: "LangGraph economic-news workflow exposed as one Hermes tool with Hermes-managed LLM routing."
 author: mzyas
