@@ -245,7 +245,7 @@ def main() -> int:
                 html_body=html_body,
                 version=version,
             )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - CLI boundary: report on stderr, exit 1
         print(f"enrichment failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
     print(
