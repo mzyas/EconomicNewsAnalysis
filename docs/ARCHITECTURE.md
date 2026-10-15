@@ -7,7 +7,7 @@
 ## 1. 项目概览
 
 ```
-EconomicNewsAnalysis  v0.8.0
+EconomicNewsAnalysis  v0.1.0
 ├── tools/              → 38 个源文件（含 graph/ 子包 + trend_table.py）
 ├── tests/              → 18 个测试文件
 ├── schemas/            → 7 个 JSON Schema

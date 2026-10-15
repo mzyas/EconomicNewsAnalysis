@@ -1,6 +1,6 @@
 [project]
 name = "EconomicNewsAnalysis"
-version = "0.9.1"
+version = "0.1.0"
 description = "LangGraph workflow for economic news analysis and market context."
 requires-python = ">=3.10"
 dependencies = [
