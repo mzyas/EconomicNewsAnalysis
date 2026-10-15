@@ -191,6 +191,11 @@ class FetchRssTests(unittest.TestCase):
         with patch(URLOPEN, side_effect=TimeoutError("read timed out")):
             self.assertEqual(fetch_rss(source(), 5, 1, 1), ([], "read timed out"))
 
+    def test_exception_without_message_gives_empty_error_string(self):
+        # Pinned: the error is "" (falsy), which fetch_all treats as a success with no items.
+        with patch(URLOPEN, side_effect=OSError()):
+            self.assertEqual(fetch_rss(source(), 5, 1, 1), ([], ""))
+
     def test_invalid_xml(self):
         items, error = self.fetch(b"<rss><channel>")
         self.assertEqual(items, [])
@@ -335,6 +340,11 @@ class FetchWorldBankTests(unittest.TestCase):
         for exc, expected in cases:
             with self.subTest(expected=expected), patch(URLOPEN, side_effect=exc):
                 self.assertEqual(fetch_worldbank_api(src, 5, 1, 1), ([], expected))
+
+    def test_exception_without_message_gives_empty_error_string(self):
+        src = source(type="worldbank_api", url=WB_URL)
+        with patch(URLOPEN, side_effect=OSError()):
+            self.assertEqual(fetch_worldbank_api(src, 5, 1, 1), ([], ""))
 
     def test_invalid_json_is_reported(self):
         (items, error), _ = self.fetch(b"not json")
