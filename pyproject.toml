@@ -34,6 +34,8 @@ packages = [
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# Markdown (docs, README) is handled by hand, not by the formatter.
+extend-exclude = ["**/*.md"]
 
 [tool.ruff.lint]
 select = [
