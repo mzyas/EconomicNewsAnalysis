@@ -139,7 +139,7 @@ class DailyEmailProfileConfigTests(TestCase):
         )
 
     def _data_dir(self, home: Path) -> Path:
-        return home / "plugin-data" / "economic-news-analysis"
+        return home / "plugin-data" / "EconomicNewsAnalysis"
 
     def test_relative_output_dir_is_anchored_to_profile_data_dir(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

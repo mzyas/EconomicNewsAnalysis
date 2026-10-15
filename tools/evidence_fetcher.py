@@ -24,7 +24,7 @@ MAX_TEXT_LENGTH = 10000
 DEFAULT_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (compatible; EconomicNewsBot/1.0; "
-        "+https://example.com/economic-news-analysis)"
+        "+https://example.com/EconomicNewsAnalysis)"
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }

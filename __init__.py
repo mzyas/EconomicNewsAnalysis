@@ -83,7 +83,7 @@ def register(ctx: Any) -> None:
     """Expose the compiled LangGraph workflow as one Hermes tool."""
     ctx.register_tool(
         name="run_langgraph_workflow",
-        toolset="economic_news_analysis",
+        toolset="EconomicNewsAnalysis",
         schema=_RUN_LANGGRAPH_WORKFLOW_SCHEMA,
         handler=_make_workflow_handler(ctx),
         description=(

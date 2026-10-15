@@ -1,5 +1,5 @@
 ---
-name: economic-news-analysis
+name: EconomicNewsAnalysis
 description: Run the economic-news LangGraph workflow for supplied text or a scheduled briefing.
 allowed-tools: run_langgraph_workflow
 ---

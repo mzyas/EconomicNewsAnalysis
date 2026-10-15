@@ -78,7 +78,7 @@ def _base_config(
             "max_quality_retries": 0,
             "research_max_items": 1,
         },
-        "_skill": {"name": "economic-news-analysis", "version": "0.8.0"},
+        "_skill": {"name": "EconomicNewsAnalysis", "version": "0.8.0"},
     }
 
 

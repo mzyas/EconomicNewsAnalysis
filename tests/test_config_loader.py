@@ -16,7 +16,7 @@ class ConfigLoaderTests(unittest.TestCase):
         # Version is injected from pyproject.toml via tools/_version.py.
         self.assertEqual(config["_skill"]["version"], PKG_VERSION)
         self.assertRegex(config["_skill"]["version"], r"^\d+\.\d+")
-        self.assertEqual(config["_skill"]["name"], "economic-news-analysis")
+        self.assertEqual(config["_skill"]["name"], "EconomicNewsAnalysis")
         self.assertEqual(config["mode"], "analyze")
         self.assertEqual(config["output_language"], "zh-CN")
         self.assertEqual(config["max_items_per_source"], 5)
@@ -52,7 +52,7 @@ class ConfigLoaderTests(unittest.TestCase):
         skill = _load_mapping(ROOT / "skill.yaml")
         # Version no longer lives in skill.yaml (single source = pyproject.toml).
         self.assertNotIn("version", skill)
-        self.assertEqual(skill["name"], "economic-news-analysis")
+        self.assertEqual(skill["name"], "EconomicNewsAnalysis")
         self.assertEqual(skill["runtime"]["entrypoint"], "tools/runtime.py")
 
     def test_env_file_loads_without_overwriting_existing_environment(self):

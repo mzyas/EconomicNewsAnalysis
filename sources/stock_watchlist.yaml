@@ -5,7 +5,7 @@
 # when their 1-day or 1-week move crosses the `movers` thresholds.
 #
 # Edit freely. Under Hermes the plugin copies this file once to
-#   <HERMES_HOME>/plugin-data/economic-news-analysis/stock_watchlist.yaml
+#   <HERMES_HOME>/plugin-data/EconomicNewsAnalysis/stock_watchlist.yaml
 # and reads that copy, so your edits survive plugin reinstalls and upgrades.
 # Delete that copy to get this default list back on the next run.
 #

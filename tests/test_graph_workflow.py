@@ -94,7 +94,7 @@ def _base_config(
             # Hermetic by default: never read the host's env/credential store
             # during tests. Tests that want real analyses set "_fake_llm".
         },
-        "_skill": {"name": "economic-news-analysis", "version": "0.8.0"},
+        "_skill": {"name": "EconomicNewsAnalysis", "version": "0.8.0"},
     }
     if extra:
         config.update(extra)

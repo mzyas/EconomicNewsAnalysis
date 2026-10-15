@@ -18,7 +18,7 @@ import re
 from importlib.metadata import PackageNotFoundError, version as _dist_version
 from pathlib import Path
 
-_DIST_NAME = "economic-news-analysis"
+_DIST_NAME = "EconomicNewsAnalysis"
 _FALLBACK = "0+unknown"
 
 

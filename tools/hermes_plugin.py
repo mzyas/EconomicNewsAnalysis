@@ -15,7 +15,7 @@ from .graph.workflow import run_workflow
 
 logger = logging.getLogger(__name__)
 
-_PLUGIN_NAME = "economic-news-analysis"
+_PLUGIN_NAME = "EconomicNewsAnalysis"
 
 _PROFILE_CONFIG_FILENAMES = {
     "daily_email": "daily_email_briefing.yaml",
