@@ -55,7 +55,7 @@ class NewsAnalysisState(TypedDict, total=False):
 - 私有字段（`_phase`, `_quality_gate`, `_retry_count`）带 `_` 前缀，驱动图执行但不进入最终输出
 - `initial_state()` 工厂函数统一初始化
 
-### 2.2 节点拓扑 — `tools/graph/nodes.py`
+### 2.2 节点拓扑 — `tools/graph/nodes/`
 
 16 个图节点，每个是一个纯函数 `(state) → state_update`：
 
@@ -343,7 +343,7 @@ mainlines  → supporting_item_ids 在前5候选内？→ 越界则拒绝
 Google News → translated_title 已提供？    → 缺失则拒绝 ✅ (v0.6.0新增)
 ```
 
-> 注：上面是 legacy `enrichment.py` 的 `validate_email_readiness()`。在 LangGraph 链路里，`quality_gate_node`（`tools/graph/nodes.py`）会在门控前**内联用一次 LLM 合成**缺失产物：核心信号（auto-enrich）、今日资讯主线（`_derive_mainlines`）、市场影响地图（`_llm_market_impact`）、以及**中美日官媒宏观背景**（`_llm_macro_background` → `ResearchAdapter.macro_background`，`MACRO_BACKGROUND_PROMPT`）。结果写入 `daily.*`，`build_briefing_node` 复用门控批准的同一份值；任一合成失败都回退到确定性版本，不阻断投递。
+> 注：上面是 legacy `enrichment.py` 的 `validate_email_readiness()`。在 LangGraph 链路里，`quality_gate_node`（`tools/graph/nodes/quality.py`）会在门控前**内联用一次 LLM 合成**缺失产物：核心信号（auto-enrich）、今日资讯主线（`_derive_mainlines`）、市场影响地图（`_llm_market_impact`）、以及**中美日官媒宏观背景**（`_llm_macro_background` → `ResearchAdapter.macro_background`，`MACRO_BACKGROUND_PROMPT`）。结果写入 `daily.*`，`build_briefing_node` 复用门控批准的同一份值；任一合成失败都回退到确定性版本，不阻断投递。
 
 ---
 
@@ -786,7 +786,7 @@ cron 运行时，Hermes 会：
 📊 财经消息 日报 2026-06-24
 ```
 
-- 日期格式 `YYYY-MM-DD`，主题带 📊 前缀（`tools/graph/nodes.py`，`deliver_email_node`）
+- 日期格式 `YYYY-MM-DD`，主题带 📊 前缀（`tools/graph/nodes/delivery.py`，`deliver_email_node`）
 - 投递失败通知的主题为 `[失败通知] 财经消息日报 YYYY-MM-DD`（无图标）
 - `email_render.py` 的 `build_mml` 只把传入的主题原样写入 `Subject:` 头，不负责生成主题
 - 时间基于 **JST（日本标准时间，UTC+9）**
