@@ -46,6 +46,7 @@ from .nodes import (
     write_outputs_node,
     write_run_log_node,
 )
+from .run_budget import public_run_summary as _public_run_summary
 from .state import NewsAnalysisState, initial_state
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,7 @@ def _after_trend_table(state: dict[str, Any]) -> str:
     return "write_outputs" if state.get("mode") == "trend" else "fetch_feeds"
 
 
-def _should_retry_or_downgrade(state: dict[str, Any]) -> str:
+def _should_retry_or_downgrade_unbudgeted(state: dict[str, Any]) -> str:
     """Decide whether to retry evidence collection or downgrade.
 
     * ``continue`` — quality gate passed, proceed to ``build_briefing``.
@@ -110,6 +111,12 @@ def _should_retry_or_downgrade(state: dict[str, Any]) -> str:
     if retry_count < max_retries:
         return "retry"
     return "downgrade"
+
+
+def _should_retry_or_downgrade(state: dict[str, Any]) -> str:
+    if (state.get("_run_budget") or {}).get("degraded"):
+        return "downgrade"
+    return _should_retry_or_downgrade_unbudgeted(state)
 
 
 def _should_deliver(state: dict[str, Any]) -> str:
@@ -258,7 +265,7 @@ def build_workflow(
 # ── Public result projection ───────────────────────────────────────────────
 
 
-def _project_result(state: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+def _project_result_unbudgeted(state: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """Convert the graph state to a payload that matches ``runtime_result.schema.json``."""
     trace_config = state.get("effective_delivery_config")
     trace_config = (
@@ -324,6 +331,14 @@ def _project_result(state: dict[str, Any], config: dict[str, Any]) -> dict[str, 
         "items_analyzed": len(public.get("analyses", [])),
     }
     return public
+
+
+def _project_result(state: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+    result = _project_result_unbudgeted(state, config)
+    budget = state.get("_run_budget")
+    if isinstance(budget, dict):
+        result["run_summary"] = _public_run_summary(budget)
+    return result
 
 
 def _actual_markdown_file(path_value: Any) -> bool:
@@ -601,23 +616,3 @@ __all__ = [
     "_write_final_runtime_json",
     "_after_market_data",
 ]
-
-# Budget-aware public projection and retry routing.
-from .run_budget import public_run_summary as _public_run_summary  # noqa: E402 - deliberate late import
-
-_should_retry_or_downgrade_unbudgeted = _should_retry_or_downgrade
-_project_result_unbudgeted = _project_result
-
-
-def _should_retry_or_downgrade(state: dict[str, Any]) -> str:
-    if (state.get("_run_budget") or {}).get("degraded"):
-        return "downgrade"
-    return _should_retry_or_downgrade_unbudgeted(state)
-
-
-def _project_result(state: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
-    result = _project_result_unbudgeted(state, config)
-    budget = state.get("_run_budget")
-    if isinstance(budget, dict):
-        result["run_summary"] = _public_run_summary(budget)
-    return result
