@@ -183,6 +183,48 @@ def _strip_trend_section(text: str) -> str:
     return "\n".join(out)
 
 
+def _open_table(html_lines: list[str], lines: list[str], i: int) -> int:
+    """Emit the table head for the row at ``lines[i]``; return the index of the next line.
+
+    The first row is the header; a following ``|---|---|`` separator row is skipped.
+    """
+    html_lines.append(
+        '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">'
+    )
+    html_lines.append("<thead>")
+    # First row is header
+    cells = _split_md_row(lines[i])
+    html_lines.append("<tr>" + "".join(f"<th>{inline_format(c)}</th>" for c in cells) + "</tr>")
+    html_lines.append("</thead><tbody>")
+    i += 1
+    # Skip separator row (|---|---|)
+    if i < len(lines) and re.match(r"^\|[\s\-:|]+\|$", lines[i].strip()):
+        i += 1
+    return i
+
+
+def _table_row_html(line: str) -> str:
+    """A data row of a markdown table."""
+    cells = _split_md_row(line)
+    return "<tr>" + "".join(f"<td>{inline_format(c)}</td>" for c in cells) + "</tr>"
+
+
+def _text_line_html(line: str) -> str:
+    """A list item, an empty line (``<br>``) or a paragraph."""
+    # List item
+    m = re.match(r"^[-•·]\s+(.*)", line)
+    if m:
+        content = inline_format(m.group(1))
+        return f"<li>{content}</li>"
+
+    # Empty line
+    if line.strip() == "":
+        return "<br>"
+
+    # Regular text
+    return f"<p>{inline_format(line)}</p>"
+
+
 def md_to_html(text: str) -> str:
     """Minimal markdown → HTML converter for briefing format."""
     text = slim_news_tables(text)
@@ -218,52 +260,20 @@ def md_to_html(text: str) -> str:
         # Table
         if "|" in line and line.strip().startswith("|"):
             if not in_table:
-                html_lines.append(
-                    '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">'
-                )
-                html_lines.append("<thead>")
                 in_table = True
-                # First row is header
-                cells = _split_md_row(line)
-                html_lines.append(
-                    "<tr>" + "".join(f"<th>{inline_format(c)}</th>" for c in cells) + "</tr>"
-                )
-                html_lines.append("</thead><tbody>")
-                i += 1
-                # Skip separator row (|---|---|)
-                if i < len(lines) and re.match(r"^\|[\s\-:|]+\|$", lines[i].strip()):
-                    i += 1
-                continue
+                i = _open_table(html_lines, lines, i)
             else:
                 # Data row
-                cells = _split_md_row(line)
-                html_lines.append(
-                    "<tr>" + "".join(f"<td>{inline_format(c)}</td>" for c in cells) + "</tr>"
-                )
+                html_lines.append(_table_row_html(line))
                 i += 1
-                continue
+            continue
 
         # End table if blank line after table rows
         if in_table and line.strip() == "":
             html_lines.append("</tbody></table>")
             in_table = False
 
-        # List item
-        m = re.match(r"^[-•·]\s+(.*)", line)
-        if m:
-            content = inline_format(m.group(1))
-            html_lines.append(f"<li>{content}</li>")
-            i += 1
-            continue
-
-        # Empty line
-        if line.strip() == "":
-            html_lines.append("<br>")
-            i += 1
-            continue
-
-        # Regular text
-        html_lines.append(f"<p>{inline_format(line)}</p>")
+        html_lines.append(_text_line_html(line))
         i += 1
 
     if in_table:
