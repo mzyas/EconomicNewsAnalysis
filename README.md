@@ -31,9 +31,13 @@ Each mode maps to an entry in [`workflows.yaml`](workflows.yaml) with an example
 
 ```bash
 uv sync --group dev                                   # install (incl. pytest)
-uv run python tools/runtime.py --config examples/daily_briefing.yaml
-uv run python tools/runtime.py --config examples/single_article.yaml --format markdown
+uv run python -m tools.runtime --config examples/daily_briefing.yaml
+uv run python -m tools.runtime --config examples/single_article.yaml --format markdown
 ```
+
+Run the tools as modules (`python -m tools.<name>`) **from the repository root**. They are not
+run by file path (`python tools/runtime.py` no longer works) and the project is not installed, so
+from another directory set `PYTHONPATH` to the repository root first.
 
 **WSL / Windows share this folder.** Each needs its own virtualenv: WSL uses the default `.venv` (plain `uv ...`); Windows uses `.venv-win` via `.\scripts\uv-win.ps1 ...` (e.g. `.\scripts\uv-win.ps1 run python -m pytest`).
 
@@ -111,8 +115,8 @@ controlled Hermes environment before enabling real delivery.
 
 ```bash
 uv run python -m pytest                               # unit + integration suite
-uv run python tools/workflow_smoke.py                 # offline smoke of every workflow
-uv run python tools/workflow_smoke.py --only daily-email-briefing --alert-on-fail
+uv run python -m tools.workflow_smoke                 # offline smoke of every workflow
+uv run python -m tools.workflow_smoke --only daily-email-briefing --alert-on-fail
 ```
 
 `workflow_smoke.py` runs each workflow through its example config and writes one JSONL entry
