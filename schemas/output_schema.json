@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EconomicNewsAnalysis",
+  "type": "object",
+  "required": ["output_language", "summary", "facts", "signals", "impact_path", "asset_impact", "watchlist", "risks", "confidence"],
+  "properties": {
+    "output_language": {
+      "type": "string",
+      "description": "Defaults to zh-CN. Another language requires explicit user selection and agent enrichment."
+    },
+    "news_item_id": { "type": "string" },
+    "translated_title": {
+      "type": "string",
+      "description": "Agent-provided, source-faithful Simplified Chinese title for title-only discovery items."
+    },
+    "source_url": { "type": "string" },
+    "analysis_method": {
+      "type": "string",
+      "enum": ["heuristic_draft", "agent_enriched"]
+    },
+    "requires_agent_enrichment": { "type": "boolean" },
+    "draft_limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "grounding_status": {
+      "type": "string",
+      "enum": ["source_summary_available", "insufficient_source_context", "title_only", "official_source_verified"]
+    },
+    "source_context": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "url": { "type": "string" },
+        "published_at": { "type": "string" },
+        "source_name": { "type": "string" },
+        "source_country": { "type": "string" },
+        "source_language": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "summary": { "type": "string" },
+    "facts": { "type": "array", "items": { "type": "string" } },
+    "signals": { "type": "array", "items": { "type": "object", "properties": { "signal": { "type": "string" }, "type": { "type": "string" }, "impact": { "type": "string" }, "assets": { "type": "array", "items": { "type": "string" } } } } },
+    "impact_path": { "type": "array", "items": { "type": "string" } },
+    "asset_impact": {
+      "type": "object",
+      "properties": {
+        "fx": { "type": "string" },
+        "bonds": { "type": "string" },
+        "equities": { "type": "string" },
+        "commodities": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "time_horizon": {
+      "type": "object",
+      "properties": {
+        "short_term": { "type": "string" },
+        "medium_term": { "type": "string" },
+        "long_term": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "watchlist": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "string", "enum": ["low", "medium", "high"] }
+  },
+  "additionalProperties": true
+}

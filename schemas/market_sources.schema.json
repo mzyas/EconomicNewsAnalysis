@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarketSources",
+  "type": "object",
+  "required": ["provider", "defaults", "symbols"],
+  "properties": {
+    "provider": { "type": "string", "minLength": 1 },
+    "defaults": {
+      "type": "object",
+      "required": ["period", "interval"],
+      "properties": {
+        "period": { "type": "string", "minLength": 1 },
+        "interval": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "ticker", "name", "asset_class", "region"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "ticker": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "name_zh": { "type": ["string", "null"] },
+          "asset_class": { "type": "string", "minLength": 1 },
+          "region": { "type": "string", "minLength": 1 },
+          "currency": { "type": ["string", "null"] },
+          "asset_type": {
+            "type": "string",
+            "enum": ["price", "yield"],
+            "default": "price"
+          },
+          "display_precision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6,
+            "default": 2
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

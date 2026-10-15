@@ -1,0 +1,18 @@
+{
+  "mode": "briefing",
+  "fetch_enabled": false,
+  "output_language": "zh-CN",
+  "output_format": "markdown",
+  "focus_assets": ["USD", "JPY", "Gold"],
+  "input_items": [
+    {
+      "title": "Federal Reserve keeps rates unchanged as inflation remains elevated",
+      "summary": "Officials said future decisions remain data dependent.",
+      "source_id": "fed_fomc",
+      "source_name": "Federal Reserve",
+      "source_country": "US",
+      "source_language": "en",
+      "source_tags": ["monetary_policy", "inflation", "usd"]
+    }
+  ]
+}

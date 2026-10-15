@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RuntimeInput",
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["briefing", "deliver", "analyze", "fetch", "check", "list-sources", "trend"]
+    },
+    "output_language": { "type": "string", "default": "zh-CN" },
+    "output_format": { "type": "string", "enum": ["json", "markdown"], "default": "json" },
+    "preserve_untranslated_proper_nouns": { "type": "boolean" },
+    "fetch_enabled": { "type": "boolean" },
+    "source_config": { "type": "string" },
+    "max_items_per_source": { "type": "integer", "minimum": 0 },
+    "max_ranked_items": { "type": "integer", "minimum": 1 },
+    "connect_timeout": { "type": "number", "minimum": 1 },
+    "read_timeout": { "type": "number", "minimum": 1 },
+    "request_pause_seconds": { "type": "number", "minimum": 0 },
+    "focus_assets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "output_dir": { "type": ["string", "null"] },
+    "deliver_email": { "type": "boolean" },
+    "log_path": { "type": ["string", "null"] },
+    "input_file": { "type": ["string", "null"] },
+    "input_items": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "env_file": { "type": ["string", "null"] },
+    "filters": {
+      "type": "object",
+      "properties": {
+        "focus_assets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+    "email": {
+      "type": "object",
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "subject": { "type": "string" },
+        "send": { "type": "boolean" },
+        "attachment_name": { "type": "string" },
+        "send_command": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+    "market_data": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "provider": { "type": "string" },
+        "source_config": { "type": "string" },
+        "watchlist_config": {
+          "type": ["string", "null"],
+          "description": "Stock watchlist YAML (news-trigger stocks, hidden from the trend table). null or empty disables it."
+        },
+        "period": { "type": "string" },
+        "interval": { "type": "string" }
+      }
+    },
+    "movers": {
+      "type": "object",
+      "description": "News searches triggered by large price moves in market_data symbols.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "day_threshold_pct": { "type": "number", "minimum": 0 },
+        "week_threshold_pct": { "type": "number", "minimum": 0 },
+        "max_symbols": { "type": "integer", "minimum": 0 },
+        "items_per_symbol": { "type": "integer", "minimum": 1 },
+        "window": { "type": "string", "pattern": "^[0-9]+[dh]$" },
+        "asset_classes": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "graph": {
+      "type": "object",
+      "properties": {
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+        "evidence_enabled": { "type": "boolean" },
+        "checkpoint_path": { "type": "string" },
+        "skip_quality_gate": { "type": "boolean" },
+        "max_quality_retries": { "type": "integer", "minimum": 0 },
+        "research_max_items": { "type": "integer", "minimum": 1 },
+        "official_max_items": { "type": "integer", "minimum": 1 },
+        "media_max_items": { "type": "integer", "minimum": 1 },
+        "tech_max_items": { "type": "integer", "minimum": 1 },
+        "google_max_items": { "type": "integer", "minimum": 1 },
+        "hot_max_items": { "type": "integer", "minimum": 1 },
+        "movers_max_items": { "type": "integer", "minimum": 1 },
+        "llm_concurrency": { "type": "integer", "minimum": 1 },
+        "enrich_max_items": { "type": "integer", "minimum": 1 },
+        "recursion_limit": { "type": "integer", "minimum": 1 },
+        "checkpoint_keep_last": { "type": "integer", "minimum": 0 },
+        "country_balance": {
+          "type": "object",
+          "description": "Per-country cap on official/media items, e.g. {\"CN\":4,\"US\":4,\"JP\":4,\"default\":99}. Absent disables balancing.",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

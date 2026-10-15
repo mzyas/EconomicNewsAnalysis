@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EconomicNewsEnrichmentPatch",
+  "type": "object",
+  "required": ["analyses"],
+  "properties": {
+    "analyses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["news_item_id"],
+        "properties": {
+          "news_item_id": { "type": "string", "minLength": 1 },
+          "translated_title": { "type": "string" },
+          "summary": { "type": "string" },
+          "signals": { "type": "array", "items": { "type": "object", "properties": { "signal": { "type": "string" }, "type": { "type": "string" }, "impact": { "type": "string" }, "assets": { "type": "array", "items": { "type": "string" } } } } },
+          "focus_assets": { "type": "array", "items": { "type": "string" } },
+          "topics": { "type": "array", "items": { "type": "string", "enum": ["monetary_policy", "inflation", "employment", "gdp_growth", "fiscal_policy", "trade", "fx", "energy", "geopolitics", "macro_news"] }, "minItems": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "daily": {
+      "type": "object",
+      "required": ["market_impact", "mainlines"],
+      "properties": {
+        "market_impact": {
+          "type": "object",
+          "required": ["rates_bonds", "fx", "equities", "commodities", "risk_appetite"],
+          "properties": {
+            "rates_bonds": { "type": "string", "minLength": 1 },
+            "fx": { "type": "string", "minLength": 1 },
+            "equities": { "type": "string", "minLength": 1 },
+            "commodities": { "type": "string", "minLength": 1 },
+            "risk_appetite": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "mainlines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["headline", "supporting_item_ids"],
+            "properties": {
+              "headline": { "type": "string", "minLength": 35 },
+              "supporting_item_ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+            },
+            "additionalProperties": false
+          }
+        },
+        "weekly_watchlist": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

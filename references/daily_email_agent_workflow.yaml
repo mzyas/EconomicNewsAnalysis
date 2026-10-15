@@ -1,0 +1,77 @@
+# Hermes daily email orchestration guide.
+#
+# NOTE (2026-06-26): the previous two-step "runtime draft -> external agent
+# enrichment -> merge_and_render" flow is DEPRECATED. The graph now auto-enriches
+# missing signals, synthesizes mainlines + the market-impact map, and renders the
+# MML inside the quality gate, so `mode: deliver` does the whole job in one run.
+# `tools/enrichment.py` is kept only for the legacy patch-merge path and is not
+# used by this workflow. Runtime configuration lives in
+# examples/daily_email_briefing.yaml.
+workflow: daily-email-briefing
+version: 2
+workspace: /home/mzyas/.hermes/profiles/karl/skills/economic-news-analysis
+artifacts:
+  runtime_dir: /tmp/economic-news-runtime
+  # 临时运行配置：以 examples/daily_email_briefing.yaml 为基底，注入真实收件人。
+  runtime_config: /tmp/economic-news-runtime/runtime_config.json
+  # deliver 运行写出 briefing_<ts>.{json,md,mml}；.mml 即被发送的邮件。
+  outputs: /tmp/economic-news-runtime/briefing_*
+
+steps:
+  - id: prepare_runtime_config
+    input: Hermes 安全邮件配置 + examples/daily_email_briefing.yaml
+    output: runtime_config
+    rules:
+      - 邮件参数在运行配置的 email 块里（from/to/send）；subject 可省略——deliver
+        运行会自动生成「📊 财经消息 <类型> <日期>」主题。无 --email-config 这个 flag。
+      - 把示例配置复制为临时 JSON，仅覆盖真实 email.from/to（按需 send:true）；
+        不得把真实收件人提交或写入仓库。
+  - id: deliver
+    # 一步到位：抓取 -> 标准化/去重 -> 排序 -> LLM 分析 -> 质量门（自动补信号、
+    # 合成主线与市场影响地图）-> 生成简报 -> 写出 json/md/mml -> himalaya 发信。
+    command: python tools/runtime.py --config /tmp/economic-news-runtime/runtime_config.json --output-dir /tmp/economic-news-runtime
+    requires: [runtime_config]
+    produces: [outputs]
+
+guards:
+  - 只发送本次 deliver 运行生成的 .mml；不得发送历史草稿或旧版 Agent Markdown。
+  - 质量门会在缺少核心信号、主线主题、日报主线或市场影响字段时拒绝生成 MML 并跳过发送。
+  - 未核验 Google News 链接标记为「Google News 发现链接」，不得标为「发布页」。
+  - himalaya 仅在配好的 WSL/karl profile 下可发；原生 Windows 无法发信。
+
+# ── 真发前检查清单（原 docs/EMAIL-DELIVERY-CHECKLIST.md，已整合至此）─────────
+# himalaya 只在 WSL（karl profile）配置；原生 Windows 无法发信。
+preflight_checklist:
+  环境_一次性:
+    - 进仓库：cd /mnt/e/_Local_Skill/economic-news-analysis
+    - 重建 Linux venv（原 .venv 是 Windows 版，WSL 用不了）：uv sync
+    - himalaya account list 能列出含 REPLACE_WITH_PRIVATE_EMAIL 的发件账户
+    - 凭证可读：uv run python -c "from tools.credentials import default_credential_provider; print([s for _,s in default_credential_provider().llm_credentials()])" 应含 deepseek
+  step1_离线冒烟_零成本:
+    - uv run python tools/workflow_smoke.py 应输出 6/6 workflows passed、exit 0
+    - 失败看 logs/workflow_smoke.jsonl 末尾的 error_type / traceback
+  step2_live_dry_run_不发:
+    - uv run python tools/workflow_smoke.py --live --only daily-email-briefing
+    - （--live 跑真实抓取+DeepSeek deepseek-v4-flash+yfinance，冒烟强制 email.send=false，只构建不投递）
+    - 该条目 outcome:"pass"、status 为 success/partial_success、stats.items_analyzed > 0
+  step3_真发:
+    - uv run python tools/runtime.py --config examples/daily_email_briefing.yaml
+    - 出现 "Message successfully sent!"（himalaya 成功标志）
+    - 无「质量门未通过，跳过邮件发送」/「邮件发送失败」等告警
+  step4_收件核对:  # 与 docs/email_preview.html 一致
+    - 主题含 📊，形如「📊 财经消息 日报 YYYY-MM-DD」
+    - 市场趋势表出现且仅一次（不重复）
+    - 今日资讯主线 1–5 条，非空
+    - 🌏 官媒宏观背景（中美日）三段都在（中/美/日）
+    - 市场影响地图 5 项均为真实分析（非「等待基于已核验来源…」占位符）
+    - 财经媒体 / 科技与AI / 热点速览 等板块按内容显示，无内容时为「暂无…」占位
+    - 标题/正文为中文（无英文原标题、无「待 Agent 忠实翻译」）
+    - 关注资产为中文资产名（黄金、美国国债…），仅通用代码保留（USD/CNY/JPY…）
+    - 本周观察指标为纯文本（无 验证：{'signal':...} 原始 dict）
+    - 页脚「自动生成」仅一次；邮件正文整体居中
+  排错:
+    - 跑不通/异常：先跑 tools/workflow_smoke.py 定位；看 logs/workflow_smoke.jsonl
+    - 超时：调 graph.llm_concurrency（默认 4，注意供应商限频）或加长 Hermes 调用超时
+    - 空转/循环：max_quality_retries:2 + recursion_limit:20 已兜底；超限以 GraphRecursionError → status:failed 终止
+    - 发不出但内容正常：检查 himalaya 账户/凭证、email.from 是否匹配账户、网络
+    - 凭证拿不到：确认 WCM 里 deepseek-key 存在（Windows 侧 cmdkey /list），WSL 能调 powershell.exe 读 WCM

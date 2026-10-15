@@ -1,0 +1,171 @@
+provider: yfinance
+defaults:
+  period: 3mo
+  interval: 1d
+
+symbols:
+  # ── Equity Indices (price type) ──────────────────────────────────────
+  - id: sp500
+    ticker: ^GSPC
+    name: S&P 500
+    name_zh: 标普500
+    asset_class: equity_index
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD
+
+  - id: nasdaq100
+    ticker: ^NDX
+    name: Nasdaq 100
+    name_zh: 纳斯达克100
+    asset_class: equity_index
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD
+
+  - id: nikkei225
+    ticker: ^N225
+    name: Nikkei 225
+    name_zh: 日经225
+    asset_class: equity_index
+    asset_type: price
+    display_precision: 2
+    region: JP
+    currency: JPY
+
+  - id: csi300
+    ticker: 000300.SS
+    name: CSI 300
+    name_zh: 沪深300
+    asset_class: equity_index
+    asset_type: price
+    display_precision: 2
+    region: CN
+    currency: CNY
+
+  - id: shanghai_comp
+    ticker: 000001.SS
+    name: Shanghai Composite
+    name_zh: 上证综指
+    asset_class: equity_index
+    asset_type: price
+    display_precision: 2
+    region: CN
+    currency: CNY
+
+  - id: hsi
+    ticker: ^HSI
+    name: Hang Seng Index
+    name_zh: 恒生指数
+    asset_class: equity_index
+    asset_type: price
+    display_precision: 2
+    region: HK
+    currency: HKD
+
+  # ── Government Bond Yields (yield type → bp changes) ────────────────
+  - id: us10y
+    ticker: ^TNX
+    name: US 10Y Yield
+    name_zh: 美国10年期国债收益率
+    asset_class: bond_yield
+    asset_type: yield
+    display_precision: 2
+    region: US
+    currency: USD
+
+  - id: us5y
+    ticker: ^FVX
+    name: US 5Y Yield
+    name_zh: 美国5年期国债收益率
+    asset_class: bond_yield
+    asset_type: yield
+    display_precision: 2
+    region: US
+    currency: USD
+
+  # ── FX (price type) ─────────────────────────────────────────────────
+  - id: dxy
+    ticker: DX-Y.NYB
+    name: US Dollar Index (DXY)
+    name_zh: 美元指数
+    asset_class: fx_index
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD
+
+  - id: usdjpy
+    ticker: JPY=X
+    name: USD/JPY
+    name_zh: 美元/日元
+    asset_class: fx
+    asset_type: price
+    display_precision: 2
+    region: JP
+    currency: JPY
+
+  # ── Commodities (price type) ────────────────────────────────────────
+  - id: gold
+    ticker: GC=F
+    name: Gold
+    name_zh: 黄金
+    asset_class: commodity
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD
+
+  - id: crude_oil
+    ticker: CL=F
+    name: Crude Oil (WTI)
+    name_zh: 原油(WTI)
+    asset_class: commodity
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD
+
+  - id: copper
+    ticker: HG=F
+    name: Copper
+    name_zh: 铜
+    asset_class: commodity
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD
+
+  - id: silver
+    ticker: SI=F
+    name: Silver
+    name_zh: 白银
+    asset_class: commodity
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD
+
+  # ── Volatility / Risk (price type) ──────────────────────────────────
+  - id: vix
+    ticker: ^VIX
+    name: VIX Volatility Index
+    name_zh: 波动率指数
+    asset_class: volatility
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD
+
+  # ── Crypto (price type) ─────────────────────────────────────────────
+  - id: bitcoin
+    ticker: BTC-USD
+    name: Bitcoin
+    name_zh: 比特币
+    asset_class: crypto
+    asset_type: price
+    display_precision: 2
+    region: US
+    currency: USD

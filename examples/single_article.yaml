@@ -1,0 +1,13 @@
+{
+  "mode": "analyze",
+  "output_language": "zh-CN",
+  "output_format": "json",
+  "focus_assets": ["USD", "JPY", "Gold"],
+  "input_items": [
+    {
+      "title": "Federal Reserve signals rates may remain higher for longer",
+      "summary": "Inflation remains above target and officials want more evidence before easing.",
+      "source": "example"
+    }
+  ]
+}

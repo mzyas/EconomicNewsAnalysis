@@ -1,0 +1,37 @@
+{
+  "mode": "briefing",
+  "fetch_enabled": false,
+  "output_language": "zh-CN",
+  "output_format": "markdown",
+  "focus_assets": ["USD", "EUR"],
+  "filters": {},
+  "graph": {
+    "evidence_enabled": true,
+    "temperature": 0.2,
+    "research_max_items": 2
+  },
+  "input_items": [
+    {
+      "title": "Federal Reserve holds rates steady, signals potential cut later this year",
+      "summary": "The Federal Reserve kept its benchmark interest rate unchanged at 4.25%-4.50% at the June 2026 meeting, citing sticky inflation but noting progress.",
+      "url": "https://www.reuters.com/markets/us/fed-holds-rates-steady-june-2026/",
+      "source_id": "reuters",
+      "source_name": "Reuters",
+      "source_country": "US",
+      "source_language": "en",
+      "source_tags": ["monetary_policy", "inflation", "fed", "interest_rates", "usd"],
+      "published_at": "2026-06-23T12:00:00Z"
+    },
+    {
+      "title": "ECB warns inflation outlook remains uncertain amid geopolitical tensions",
+      "summary": "European Central Bank officials expressed caution about the inflation trajectory, pointing to energy prices and trade disruptions.",
+      "url": "https://www.reuters.com/markets/europe/ecb-warns-inflation-outlook-uncertain-2026/",
+      "source_id": "reuters",
+      "source_name": "Reuters",
+      "source_country": "DE",
+      "source_language": "en",
+      "source_tags": ["monetary_policy", "inflation", "ecb", "eur"],
+      "published_at": "2026-06-23T10:30:00Z"
+    }
+  ]
+}

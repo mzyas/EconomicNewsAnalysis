@@ -1,0 +1,16 @@
+{
+  "mode": "trend",
+  "output_language": "zh-CN",
+  "output_format": "markdown",
+  "output_dir": null,
+  "deliver_email": false,
+  "market_data": {
+    "enabled": true,
+    "provider": "yfinance",
+    "source_config": "sources/market_sources.yaml",
+    "period": "3mo",
+    "interval": "1d"
+  },
+  "graph": {
+  }
+}

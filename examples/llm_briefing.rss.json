@@ -1,0 +1,17 @@
+{
+  "mode": "briefing",
+  "fetch_enabled": true,
+  "max_items_per_source": 3,
+  "max_ranked_items": 5,
+  "request_pause_seconds": 0.5,
+  "timeout_seconds": 20,
+  "output_language": "zh-CN",
+  "output_format": "markdown",
+  "focus_assets": ["USD", "JPY", "Gold"],
+  "graph": {
+    "evidence_enabled": true,
+    "temperature": 0.2,
+    "research_max_items": 3
+  },
+  "filters": {}
+}

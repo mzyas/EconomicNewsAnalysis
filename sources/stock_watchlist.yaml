@@ -1,0 +1,198 @@
+# Stock watchlist — individual stocks that trigger market-mover news searches.
+#
+# These symbols are fetched with the market data, but they are NOT shown in the
+# trend table: they only trigger a targeted Google News search (the 异动解读 section)
+# when their 1-day or 1-week move crosses the `movers` thresholds.
+#
+# Edit freely. Under Hermes the plugin copies this file once to
+#   <HERMES_HOME>/plugin-data/economic-news-analysis/stock_watchlist.yaml
+# and reads that copy, so your edits survive plugin reinstalls and upgrades.
+# Delete that copy to get this default list back on the next run.
+#
+# Fields per stock:
+#   id        unique key (lowercase, no spaces)           required
+#   ticker    Yahoo Finance ticker, e.g. NVDA, 7203.T, 0700.HK   required
+#   name      English name, used in the news search query  required
+#   region    US / JP / HK / CN ...                         required
+#   name_zh   Chinese display name                          optional
+#   currency  USD / JPY / HKD ...                           optional
+# asset_class defaults to equity_stock, asset_type to price, display_precision to 2.
+
+symbols:
+  # ── US ──
+  - id: nvda
+    ticker: NVDA
+    name: NVIDIA
+    name_zh: 英伟达
+    region: US
+    currency: USD
+
+  - id: avgo
+    ticker: AVGO
+    name: Broadcom
+    name_zh: 博通
+    region: US
+    currency: USD
+
+  - id: amd
+    ticker: AMD
+    name: AMD
+    name_zh: 超威半导体
+    region: US
+    currency: USD
+
+  - id: amat
+    ticker: AMAT
+    name: Applied Materials
+    name_zh: 应用材料
+    region: US
+    currency: USD
+
+  - id: mu
+    ticker: MU
+    name: Micron Technology
+    name_zh: 美光科技
+    region: US
+    currency: USD
+
+  - id: intc
+    ticker: INTC
+    name: Intel
+    name_zh: 英特尔
+    region: US
+    currency: USD
+
+  - id: qcom
+    ticker: QCOM
+    name: Qualcomm
+    name_zh: 高通
+    region: US
+    currency: USD
+
+  - id: smci
+    ticker: SMCI
+    name: Super Micro Computer
+    name_zh: 超微电脑
+    region: US
+    currency: USD
+
+  - id: arm
+    ticker: ARM
+    name: Arm Holdings
+    name_zh: 安谋
+    region: US
+    currency: USD
+
+  - id: lrcx
+    ticker: LRCX
+    name: Lam Research
+    name_zh: 泛林集团
+    region: US
+    currency: USD
+
+  - id: klac
+    ticker: KLAC
+    name: KLA Corporation
+    name_zh: 科磊
+    region: US
+    currency: USD
+
+  - id: tsm
+    ticker: TSM
+    name: TSMC
+    name_zh: 台积电
+    region: US
+    currency: USD
+
+  - id: asml
+    ticker: ASML
+    name: ASML
+    name_zh: 阿斯麦
+    region: US
+    currency: USD
+
+  - id: aapl
+    ticker: AAPL
+    name: Apple
+    name_zh: 苹果
+    region: US
+    currency: USD
+
+  - id: msft
+    ticker: MSFT
+    name: Microsoft
+    name_zh: 微软
+    region: US
+    currency: USD
+
+  - id: googl
+    ticker: GOOGL
+    name: Alphabet
+    name_zh: 谷歌母公司Alphabet
+    region: US
+    currency: USD
+
+  - id: amzn
+    ticker: AMZN
+    name: Amazon
+    name_zh: 亚马逊
+    region: US
+    currency: USD
+
+  - id: meta
+    ticker: META
+    name: Meta Platforms
+    name_zh: Meta
+    region: US
+    currency: USD
+
+  - id: tsla
+    ticker: TSLA
+    name: Tesla
+    name_zh: 特斯拉
+    region: US
+    currency: USD
+
+  # ── JP ──
+  - id: tokyo_electron
+    ticker: 8035.T
+    name: Tokyo Electron
+    name_zh: 东京电子
+    region: JP
+    currency: JPY
+
+  - id: advantest
+    ticker: 6857.T
+    name: Advantest
+    name_zh: 爱德万测试
+    region: JP
+    currency: JPY
+
+  - id: softbank_group
+    ticker: 9984.T
+    name: SoftBank Group
+    name_zh: 软银集团
+    region: JP
+    currency: JPY
+
+  - id: toyota
+    ticker: 7203.T
+    name: Toyota Motor
+    name_zh: 丰田汽车
+    region: JP
+    currency: JPY
+
+  # ── HK ──
+  - id: tencent
+    ticker: 0700.HK
+    name: Tencent
+    name_zh: 腾讯控股
+    region: HK
+    currency: HKD
+
+  - id: alibaba
+    ticker: 9988.HK
+    name: Alibaba
+    name_zh: 阿里巴巴
+    region: HK
+    currency: HKD
