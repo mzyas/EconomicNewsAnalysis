@@ -166,10 +166,6 @@ def fetch_rss(
     except ET.ParseError as e:
         return [], f"XML parse error: {e}"
 
-    # Detect namespace
-    ns = ""
-    if root.tag.startswith("{"):
-        ns = root.tag.split("}")[0] + "}"
     atom_ns = "http://www.w3.org/2005/Atom"
 
     # Find items/entries
@@ -275,7 +271,7 @@ def fetch_worldbank_api(
     items: list[FeedItem] = []
     count = 0
 
-    for key, doc in data.get("documents", {}).items():
+    for doc in data.get("documents", {}).values():
         if count >= max_items:
             break
 
@@ -474,7 +470,7 @@ def main() -> int:
         tag_set = {t.strip().lower() for t in args.tags.split(",")}
         sources = [s for s in sources if tag_set & {t.lower() for t in s.tags}]
     if args.language:
-        langs = {l.strip().lower() for l in args.language.split(",")}
+        langs = {lang.strip().lower() for lang in args.language.split(",")}
         sources = [s for s in sources if s.language in langs]
 
     if args.list:

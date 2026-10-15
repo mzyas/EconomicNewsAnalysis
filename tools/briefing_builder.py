@@ -470,7 +470,7 @@ def _html_table(rows: list[dict[str, str]]) -> str:
     header = "".join(
         f'<th style="{cell}width:{width};background:#f6f8fa;text-align:{align}">{label}</th>'
         for width, align, label in zip(
-            widths, aligns, ["重要性", "主题", "新闻内容", "核心信号", "关注资产"]
+            widths, aligns, ["重要性", "主题", "新闻内容", "核心信号", "关注资产"], strict=True
         )
     )
     body: list[str] = []

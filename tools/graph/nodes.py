@@ -1464,7 +1464,7 @@ __all__ = [
 
 # Budget wrappers are defined after the original nodes so normal graph imports
 # receive deadline-aware behavior without changing the underlying adapters.
-from .run_budget import (
+from .run_budget import (  # noqa: E402 - deliberate: wrappers are defined after the nodes
     begin_stage as _budget_begin,
     complete_stage as _budget_complete,
     should_stop_optional_work as _budget_stop,

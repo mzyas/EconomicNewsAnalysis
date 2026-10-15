@@ -189,7 +189,6 @@ def md_to_html(text: str) -> str:
     lines = text.split("\n")
     html_lines = []
     in_table = False
-    in_paragraph = False
 
     i = 0
     while i < len(lines):
@@ -340,8 +339,6 @@ def build_combined_email_html(
     str
         HTML content suitable for injection into the ``<body>`` of an MML message.
     """
-
-    date_str = (report_date or as_of or "")[:10] if (report_date or as_of) else ""
 
     # ── Trend table rows ────────────────────────────────────────────────
     trend_rows_html = ""

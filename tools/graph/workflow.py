@@ -539,7 +539,7 @@ __all__ = [
 ]
 
 # Budget-aware public projection and retry routing.
-from .run_budget import public_run_summary as _public_run_summary
+from .run_budget import public_run_summary as _public_run_summary  # noqa: E402 - deliberate late import
 
 _should_retry_or_downgrade_unbudgeted = _should_retry_or_downgrade
 _project_result_unbudgeted = _project_result
