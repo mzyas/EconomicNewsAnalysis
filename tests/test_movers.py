@@ -165,7 +165,7 @@ class MoversNodeTests(unittest.TestCase):
             self.assertNotIn("items", update)
 
     def test_exception_is_recorded_and_items_untouched(self):
-        with patch("tools.graph.nodes.fetch_mover_items", side_effect=RuntimeError("boom")):
+        with patch("tools.graph.nodes.fetch.fetch_mover_items", side_effect=RuntimeError("boom")):
             update = movers_news_node(self._state())
         self.assertNotIn("items", update)
         self.assertEqual(update["errors"][-1]["type"], "MoverError")

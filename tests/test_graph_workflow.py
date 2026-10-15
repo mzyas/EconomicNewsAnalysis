@@ -130,7 +130,7 @@ class FetchMarketDataNodeTests(unittest.TestCase):
     def test_enabled_market_data_attempts_provider_call(self) -> None:
         state = _state()
         state["config"]["market_data"]["enabled"] = True
-        with patch("tools.graph.nodes.build_market_context") as mock_ctx:
+        with patch("tools.graph.nodes.fetch.build_market_context") as mock_ctx:
             mock_ctx.return_value = {
                 "enabled": True,
                 "provider": "yfinance",
@@ -164,7 +164,7 @@ class FetchFeedsNodeTests(unittest.TestCase):
             "skipped": [],
             "fetched_at": "2026-06-23T00:00:00Z",
         }
-        with patch("tools.graph.nodes.fetch_from_config", return_value=fake) as mock:
+        with patch("tools.graph.nodes.fetch.fetch_from_config", return_value=fake) as mock:
             update = fetch_feeds_node(state)
         self.assertEqual(update["_items_fetched"], 1)
         self.assertEqual(update["_sources_successful"], 1)
@@ -184,7 +184,7 @@ class GoogleNewsResolveNodeTests(unittest.TestCase):
                 "discovery": {"channel": "google_news", "original_url": "https://example.com/a"},
             }
         ]
-        with patch("tools.graph.nodes.enrich_google_news_items") as mock:
+        with patch("tools.graph.nodes.fetch.enrich_google_news_items") as mock:
             mock.return_value = (
                 [
                     {
@@ -238,7 +238,7 @@ class CollectEvidenceNodeTests(unittest.TestCase):
                     "url": f"https://example.com/{index}",
                 }
             )
-        with patch("tools.graph.nodes.batch_fetch") as mock:
+        with patch("tools.graph.nodes.analysis.batch_fetch") as mock:
             mock.return_value = [
                 {
                     "url": "https://example.com/0",
@@ -256,7 +256,7 @@ class CollectEvidenceNodeTests(unittest.TestCase):
             {"id": "i-1", "title": "T", "summary": "S", "url": "https://example.com/x"}
         ]
         with patch(
-            "tools.graph.nodes.batch_fetch",
+            "tools.graph.nodes.analysis.batch_fetch",
             return_value=[
                 {
                     "url": "https://example.com/x",
@@ -286,7 +286,7 @@ class CollectEvidenceNodeTests(unittest.TestCase):
                 "url": "https://publisher.example.com/article",
             },
         ]
-        with patch("tools.graph.nodes.batch_fetch") as mock:
+        with patch("tools.graph.nodes.analysis.batch_fetch") as mock:
             mock.return_value = [
                 {
                     "url": "https://publisher.example.com/article",
