@@ -146,7 +146,7 @@ def build_parser() -> argparse.ArgumentParser:
 def _failure_payload(args: argparse.Namespace, exc: Exception) -> dict[str, Any]:
     try:
         skill_identity = load_runtime_config()["_skill"]
-    except Exception:
+    except Exception:  # noqa: BLE001 - must not fail while building the failure report
         skill_identity = {
             "name": "EconomicNewsAnalysis",
             "version": "unknown",
@@ -212,12 +212,12 @@ def main() -> int:
         )
     except SystemExit:
         raise
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - CLI boundary: failure is reported as JSON on stderr
         try:
             error = _failure_payload(args, exc)
             validate_file(error, ROOT / "schemas" / "runtime_result.schema.json")
             print(json.dumps(error, ensure_ascii=False, indent=2), file=sys.stderr)
-        except Exception:
+        except Exception:  # noqa: BLE001 - last resort when the failure report itself fails
             print(
                 json.dumps({"status": "failed", "error": str(exc)}, ensure_ascii=False),
                 file=sys.stderr,

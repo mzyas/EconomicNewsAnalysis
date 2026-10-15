@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from ..models import MarketSnapshot, MarketSymbol
+
+logger = logging.getLogger(__name__)
 
 
 class YFinanceProvider:
@@ -34,6 +37,7 @@ class YFinanceProvider:
                 )
                 snapshots.append(self._snapshot_from_history(symbol, history, period, interval))
             except Exception as exc:
+                logger.warning("market snapshot failed symbol=%s", symbol.id, exc_info=True)
                 snapshots.append(self._failed(symbol, period, interval, str(exc)))
         return snapshots
 
@@ -147,6 +151,7 @@ class YFinanceProvider:
             extended.loc[latest_session] = float(iclose.iloc[-1])
             return extended.sort_index()
         except Exception:
+            logger.debug("intraday splice skipped ticker=%s", ticker, exc_info=True)
             return close
 
     def _failed(

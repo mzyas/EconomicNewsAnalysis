@@ -46,6 +46,9 @@ select = [
     "I",   # isort
     "B",   # flake8-bugbear
     "UP",  # pyupgrade
+    "BLE",  # blind except: log the traceback, re-raise, or add a `noqa` that says why
+    "S110",  # try-except-pass
+    "S112",  # try-except-continue
 ]
 # Long string literals and comments are left to the formatter's judgement.
 ignore = ["E501"]

@@ -163,7 +163,7 @@ def _fetch_bytes(
         return None, f"HTTP {e.code}"
     except urllib.error.URLError as e:
         return None, f"Network: {e.reason}"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - one bad source must not abort the whole batch
         return None, str(e)
     return raw, None
 
@@ -320,7 +320,7 @@ def fetch_worldbank_api(
         return [], error
     try:
         data = json.loads(raw)
-    except Exception as e:
+    except ValueError as e:  # JSONDecodeError and UnicodeDecodeError
         return [], str(e)
 
     now = datetime.now(timezone.utc).isoformat()

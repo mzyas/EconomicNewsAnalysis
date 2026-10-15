@@ -346,6 +346,12 @@ class FetchWorldBankTests(unittest.TestCase):
         with patch(URLOPEN, side_effect=OSError()):
             self.assertEqual(fetch_worldbank_api(src, 5, 1, 1), ([], ""))
 
+    def test_undecodable_json_bytes_are_reported_not_raised(self):
+        # UnicodeDecodeError is a ValueError, so the narrowed handler still reports it.
+        (items, error), _ = self.fetch(bytes([0xFF, 0xFE, 0x00, 0xD8]) + b" not text")
+        self.assertEqual(items, [])
+        self.assertTrue(error)
+
     def test_invalid_json_is_reported(self):
         (items, error), _ = self.fetch(b"not json")
         self.assertEqual(items, [])
