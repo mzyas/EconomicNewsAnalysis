@@ -91,7 +91,7 @@ override permissions in the Hermes profile.
 ## Email delivery
 
 Email is sent through [himalaya](https://github.com/pimalaya/himalaya), which is only
-configured under **WSL (karl profile)** — native Windows cannot send. Before a real send,
+configured under **WSL (target Hermes profile)** — native Windows cannot send. Before a real send,
 follow the `preflight_checklist` in
 [`references/daily_email_agent_workflow.yaml`](references/daily_email_agent_workflow.yaml). With
 `email.send: false` the pipeline still renders the `.mml` / preview HTML for inspection.

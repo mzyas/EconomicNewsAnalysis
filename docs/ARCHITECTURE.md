@@ -775,7 +775,7 @@ cron 运行时，Hermes 会：
 # email_delivery.py
 # 1. 将 Markdown 简报转为 MML（himalaya 兼容格式）
 # 2. 通过 himalaya CLI 发送：
-#    echo "..." | HOME=/home/mzyas himalaya template send --from REPLACE_WITH_PRIVATE_EMAIL ...
+#    echo "..." | HOME=/home/user himalaya template send --from REPLACE_WITH_PRIVATE_EMAIL ...
 ```
 
 ### 13.5 邮件主题自动生成

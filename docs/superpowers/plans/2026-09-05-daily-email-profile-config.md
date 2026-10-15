@@ -113,7 +113,7 @@ Expected: PASS.
 - Delete: `examples/daily_email_briefing.yaml`
 - Modify: `workflows.yaml`
 - Modify: `README.md`
-- Modify: `docs/HERMES-KARL-FIRST-INSTALL.md`
+- Modify: `docs/HERMES-FIRST-INSTALL.md`
 - Modify: `tests/test_config_loader.py`
 
 **Interfaces:**
@@ -178,7 +178,7 @@ git add __init__.py tools/hermes_plugin.py daily_email_briefing.yaml \
   examples/daily_email_briefing.yaml workflows.yaml README.md \
   docs/daily-email-profile-config-design.md \
   docs/superpowers/plans/2026-09-05-daily-email-profile-config.md \
-  docs/HERMES-KARL-FIRST-INSTALL.md tests/test_hermes_native_plugin.py \
+  docs/HERMES-FIRST-INSTALL.md tests/test_hermes_native_plugin.py \
   tests/test_hermes_llm_routing.py tests/test_config_loader.py
 git commit -m "feat: add safe daily email profile selector"
 ```

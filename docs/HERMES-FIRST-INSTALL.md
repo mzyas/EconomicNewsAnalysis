@@ -1,31 +1,50 @@
-# Hermes Karl 首次安装需求
+# Hermes 首次安装需求
 
-状态：仅记录部署要求；本次未向 WSL、Karl profile 或任何模型服务写入配置。
+状态：仅记录部署要求；本次未向 WSL、目标 profile 或任何模型服务写入配置。
 
 ## 目标与边界
 
-此项目供 WSL 侧 Hermes 的 `karl` profile 使用。Skill 本身不选择模型、
+此项目供 WSL 侧 Hermes 的目标 profile 使用（其根目录记作 `REPLACE_WITH_HERMES_PROFILE_ROOT`，见下文“占位符”）。Skill 本身不选择模型、
 provider、URL 或 API key；Cron 主 Agent 的模型和插件 profile 的路由策略由
 Hermes 配置负责。
 
 Skill 的固定安装目标为：
 
 ```text
-/home/mzyas/.hermes/profiles/karl/skills/economic-news-analysis/SKILL.md
+REPLACE_WITH_HERMES_PROFILE_ROOT/skills/EconomicNewsAnalysis/SKILL.md
 ```
 
 原生工具插件需要独立安装在同一 profile 的插件根目录。预期目标为：
 
 ```text
-/home/mzyas/.hermes/profiles/karl/plugins/economic-news-analysis/
+REPLACE_WITH_HERMES_PROFILE_ROOT/plugins/EconomicNewsAnalysis/
 ```
 
-在复制前，由 Hermes 内的 GPT 先确认 `karl` 的实际 profile root；如果 `hermes
+在复制前，由 Hermes 内的 GPT 先确认目标 profile 的实际 profile root；如果 `hermes
 config path` 显示了不同位置，以该命令的结果为准。
+
+## 占位符
+
+仓库里的文档和参考文件不写任何本机路径，只用下面的占位符。首次安装时由 Hermes
+agent 确定实际值并填写；**只在部署副本里替换，不要回写到 Git 工作树。**
+
+| 占位符 | 含义 | 怎么确定 |
+|---|---|---|
+| `REPLACE_WITH_HERMES_PROFILE_ROOT` | 目标 Hermes profile 的根目录（其下有 `skills/`、`plugins/`、`plugin-data/`） | 运行 `hermes config path`，以其输出为准 |
+| `REPLACE_WITH_REPO_PATH` | 本项目在 WSL 里的检出路径 | 在仓库根目录运行 `pwd`，或向用户确认 |
+
+邮件相关的 `REPLACE_WITH_SENDER`、`REPLACE_WITH_RECIPIENT`、`REPLACE_WITH_PRIVATE_EMAIL`
+是另一类占位符，只在受控的部署副本中、真正开启发信之前补齐，规则见下文“配置要求”。
+
+安装完成后，在部署副本里检查路径占位符是否已全部替换（应无任何输出）：
+
+```bash
+grep -rn "REPLACE_WITH_HERMES_PROFILE_ROOT\|REPLACE_WITH_REPO_PATH" <部署副本目录>
+```
 
 ## 要部署的工件
 
-| 来源 | Karl 目标 | 用途 |
+| 来源 | Hermes 目标 | 用途 |
 |---|---|---|
 | `skills/EconomicNewsAnalysis/SKILL.md` | `skills/EconomicNewsAnalysis/SKILL.md` | Agent 使用说明；不含模型配置。 |
 | 项目根 `plugin.yaml`、`__init__.py`、`tools/`、`schemas/`、`sources/`、`workflows.yaml`、`skill.yaml` 与项目运行配置 | `plugins/EconomicNewsAnalysis/` | Hermes 原生工具 `run_langgraph_workflow` 和图运行时。 |
@@ -68,7 +87,7 @@ Hermes 只加载插件；不会自动安装 Python 依赖。首次部署时，�
 
 ## 验收顺序
 
-1. 在 WSL / Karl profile 运行 Plugin Doctor，确认有一个
+1. 在 WSL / 目标 profile 运行 Plugin Doctor，确认有一个
    `run_langgraph_workflow` 工具注册。
 2. 用继承 Cron GPT 模型的 `analyze` 调用处理一段短文本。
 3. 检查返回的 `llm_audit`，确认其中包含实际的 `node`、`provider`、`model`。

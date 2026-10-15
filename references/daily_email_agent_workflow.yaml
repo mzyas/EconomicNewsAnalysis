@@ -9,7 +9,7 @@
 # examples/daily_email_briefing.yaml.
 workflow: daily-email-briefing
 version: 2
-workspace: /home/mzyas/.hermes/profiles/karl/skills/economic-news-analysis
+workspace: REPLACE_WITH_HERMES_PROFILE_ROOT/skills/EconomicNewsAnalysis
 artifacts:
   runtime_dir: /tmp/economic-news-runtime
   # 临时运行配置：以 examples/daily_email_briefing.yaml 为基底，注入真实收件人。
@@ -37,13 +37,13 @@ guards:
   - 只发送本次 deliver 运行生成的 .mml；不得发送历史草稿或旧版 Agent Markdown。
   - 质量门会在缺少核心信号、主线主题、日报主线或市场影响字段时拒绝生成 MML 并跳过发送。
   - 未核验 Google News 链接标记为「Google News 发现链接」，不得标为「发布页」。
-  - himalaya 仅在配好的 WSL/karl profile 下可发；原生 Windows 无法发信。
+  - himalaya 仅在配好的 WSL/目标 profile 下可发；原生 Windows 无法发信。
 
 # ── 真发前检查清单（原 docs/EMAIL-DELIVERY-CHECKLIST.md，已整合至此）─────────
-# himalaya 只在 WSL（karl profile）配置；原生 Windows 无法发信。
+# himalaya 只在 WSL（目标 profile）配置；原生 Windows 无法发信。
 preflight_checklist:
   环境_一次性:
-    - 进仓库：cd /mnt/e/_Local_Skill/economic-news-analysis
+    - 进仓库：cd REPLACE_WITH_REPO_PATH
     - 重建 Linux venv（原 .venv 是 Windows 版，WSL 用不了）：uv sync
     - himalaya account list 能列出含 REPLACE_WITH_PRIVATE_EMAIL 的发件账户
     - 凭证可读：uv run python -c "from tools.credentials import default_credential_provider; print([s for _,s in default_credential_provider().llm_credentials()])" 应含 deepseek
