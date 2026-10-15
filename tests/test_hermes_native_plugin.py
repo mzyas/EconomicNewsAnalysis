@@ -49,7 +49,7 @@ class HermesNativePluginTests(TestCase):
         self.assertIsNotNone(ctx.registration)
         assert ctx.registration is not None
         self.assertEqual(ctx.registration["name"], "run_langgraph_workflow")
-        self.assertEqual(ctx.registration["toolset"], "economic_news_analysis")
+        self.assertEqual(ctx.registration["toolset"], "EconomicNewsAnalysis")
         self.assertEqual(ctx.registration["schema"]["required"], [])
         self.assertEqual(
             ctx.registration["schema"]["properties"]["profile_config"]["enum"],
