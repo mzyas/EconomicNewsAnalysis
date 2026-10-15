@@ -1,0 +1,36 @@
+workflows:
+  daily-briefing:
+    mode: briefing
+    activation: manual
+    description: 生成与邮件版相同的每日重点新闻简报（市场趋势表 + 今日资讯主线 + 🌏官媒宏观背景中美日 + 财经媒体/科技与AI/Google News/热点速览 + 市场影响地图），仅保存为本地文件，不发邮件
+    example_config: examples/daily_briefing.yaml
+
+  daily-email-briefing:
+    mode: deliver
+    activation: scheduled_or_manual
+    description: 生成每日重点新闻简报（市场趋势表 + 今日资讯主线 + 🌏官媒宏观背景中美日 + 财经媒体/科技与AI/Google News/热点速览 + 市场影响地图），通过 Email 发送
+    example_config: daily_email_briefing.yaml
+
+  news-analysis:
+    mode: analyze
+    activation: manual
+    description: 解读用户主动提供的单条或多条新闻，输出结构化分析与核心信号
+    example_config: examples/single_article.yaml
+
+  fetch-only:
+    mode: fetch
+    activation: scheduled_or_manual
+    description: 仅抓取、标准化和去重新闻，不做 LLM 分析
+    example_config: examples/fetch_only.yaml
+
+  source-check:
+    mode: check
+    activation: scheduled_or_manual
+    description: 检查抓取日志与数据源运行状态，判断是否需要本轮抓取
+    example_config: examples/source_check.yaml
+
+  daily-trend:
+    mode: trend
+    activation: scheduled_or_manual
+    description: 生成每日市场趋势表（纯确定性市场数据，不调用 RSS/LLM）
+    example_config: examples/daily_trend.yaml

@@ -1,0 +1,2 @@
+# Normalize all text files to LF in the repo and in checkouts (Windows + WSL share this folder).
+* text=auto eol=lf

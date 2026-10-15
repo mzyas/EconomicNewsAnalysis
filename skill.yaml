@@ -1,0 +1,56 @@
+name: economic-news-analysis
+# 版本号唯一来源是 pyproject.toml（[project].version），运行时由 tools/_version.py
+# 读取并注入到 _skill.version，这里不再单独维护，避免多处版本漂移。
+description: >
+  LangGraph 经济新闻分析与市场背景管道：抓取(RSS/Google/市场数据) → 标准化去重 →
+  排序(板块配额 + 中美日国家均衡) → Hermes 托管 LLM 分析 → 质量门(自动合成今日资讯主线 /
+  官媒宏观背景中美日 / 市场影响地图) → 简报渲染(财经媒体 / 科技与AI / Google News /
+  热点速览 等板块) → himalaya 邮件投递。亦支持纯确定性市场趋势表(trend mode)。
+runtime:
+  language: python
+  entrypoint: tools/runtime.py
+defaults:
+  mode: briefing
+  output_language: zh-CN
+  preserve_untranslated_proper_nouns: true
+  output_format: json
+  source_config: sources/rss_sources.yaml
+  max_items_per_source: 5
+  max_ranked_items: 20
+  connect_timeout: 10
+  read_timeout: 40
+  request_pause_seconds: 0.3
+  fetch_enabled: true
+  output_dir: null
+  # Resolved against the skill/plugin root by config_loader, not the caller CWD.
+  log_path: .hermes/logs/daily-workflow.jsonl
+  env_file: null
+  market_data:
+    enabled: false
+    provider: yfinance
+    source_config: sources/market_sources.yaml
+    period: 5d
+    interval: 1d
+  deliver_email: false
+  filters: {}
+  # Default attention set so asset-agnostic modes (fetch/check/trend) inherit a
+  # non-empty focus_assets and pass schema validation; content modes override it.
+  focus_assets: ["USD", "CNY", "Gold"]
+  input_items: []
+  email: {}
+  graph:
+    temperature: 0.2
+    evidence_enabled: true
+    checkpoint_path: ".hermes/graph_checkpoints"
+    max_quality_retries: 1
+    research_max_items: 5
+    # Per-country cap on official/media items so one country (historically
+    # China) cannot crowd out the others. "default" covers unlisted countries.
+    country_balance:
+      CN: 4
+      US: 4
+      JP: 4
+      default: 99
+    # Keep only the N most recent run threads in the SQLite checkpoint DB; older
+    # threads are pruned after each run so the file does not grow without bound.
+    checkpoint_keep_last: 20

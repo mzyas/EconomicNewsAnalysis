@@ -1,0 +1,673 @@
+# 合并后的经济新闻 RSS/数据源配置
+# = 示例源 + 参考文档候选 + Google News RSS 关键词 URL
+# 用法: python scripts/fetch_feeds.py --source rss_sources.yaml --output /tmp/feeds.json
+
+sources:
+  # ═══════════════════════════════════════════════════
+  # 🏛️  板块一：央行官方
+  # ═══════════════════════════════════════════════════
+
+  - id: fed_press_all
+    name: Federal Reserve - All Press Releases
+    type: rss
+    country: US
+    language: en
+    category: central_bank
+    url: https://www.federalreserve.gov/feeds/press_all.xml
+    tags: [monetary_policy, interest_rate, usd, bond_yield]
+
+  - id: fed_fomc
+    name: Federal Reserve - FOMC Statements
+    type: rss
+    country: US
+    language: en
+    category: central_bank
+    url: https://www.federalreserve.gov/feeds/press_monetary.xml
+    tags: [monetary_policy, interest_rate, usd, fomc]
+
+  - id: fed_speeches
+    name: Federal Reserve - Speeches
+    type: rss
+    country: US
+    language: en
+    category: central_bank
+    url: https://www.federalreserve.gov/feeds/speeches.xml
+    tags: [monetary_policy, usd, forward_guidance]
+
+  # ═══════════════════════════════════════════════════
+  # 🏛️  板块一：央行官方（续）
+  # ═══════════════════════════════════════════════════
+
+  - id: ecb_rss
+    name: European Central Bank - Press Releases
+    type: rss
+    region: Eurozone
+    language: en
+    category: central_bank
+    url: https://www.ecb.europa.eu/rss/press.html
+    tags: [monetary_policy, inflation, eur, bond_yield]
+
+  - id: boj_rss
+    name: Bank of Japan - What's New
+    type: rss
+    country: JP
+    language: en
+    category: central_bank
+    url: https://www.boj.or.jp/en/rss/whatsnew.xml
+    tags: [japan_boj, jpy, monetary_policy, statistics, research]
+
+  - id: pboc_rss
+    name: PBoC - News Releases
+    type: rss
+    country: CN
+    language: zh
+    category: central_bank
+    url: https://www.pbc.gov.cn/goutongjiaoliu/113456/2986536/index.html
+    tags: [china_pboc, monetary_policy, fx, cny, financial_stability]
+
+  - id: central_banking_monetary
+    name: Central Banking - Monetary Policy
+    type: rss
+    region: Global
+    language: en
+    category: central_bank_news
+    url: https://www.centralbanking.com/feeds/rss/category/central-banks/monetary-policy
+    tags: [monetary_policy, interest_rate, forward_guidance, central_bank]
+
+  - id: central_banking_economics
+    name: Central Banking - Economics
+    type: rss
+    region: Global
+    language: en
+    category: central_bank_news
+    url: https://www.centralbanking.com/feeds/rss/category/central-banks/economics
+    tags: [inflation, gdp_growth, macroeconomics, data]
+
+  - id: central_banking_finstab
+    name: Central Banking - Financial Stability
+    type: rss
+    region: Global
+    language: en
+    category: central_bank_news
+    url: https://www.centralbanking.com/feeds/rss/category/central-banks/financial-stability
+    tags: [financial_stability, banking, regulation, macro_prudential]
+
+  # ═══════════════════════════════════════════════════
+  # 🏛️  板块一：政府/财政/统计（续）
+  # ═══════════════════════════════════════════════════
+
+  - id: mof_japan
+    name: Japan Ministry of Finance
+    type: official_page
+    country: JP
+    language: en
+    category: finance_ministry
+    url: https://www.mof.go.jp/english/
+    tags: [japan_fiscal, fx_intervention, jpy, jgb]
+
+  - id: fsa_rss
+    name: Japan FSA - News
+    type: rss
+    country: JP
+    language: en
+    category: financial_regulator
+    url: https://www.fsa.go.jp/fsaEnNewsList_rss2.xml
+    tags: [japan_banking, financial_stability, regulation]
+
+  - id: cabinet_office_rss
+    name: Japan Cabinet Office - Press Releases
+    type: rss
+    country: JP
+    language: ja
+    category: government_news
+    url: https://www.cao.go.jp/rss/news.rdf
+    tags: [japan_policy, government, regulation, statistics]
+
+  - id: meti_statistics_rss
+    name: METI - Statistics News
+    type: rss
+    country: JP
+    language: en
+    category: statistics
+    url: https://www.meti.go.jp/english/statistics/st_en_news.xml
+    tags: [japan_data, industry, production, trade, meti]
+
+  # ═══════════════════════════════════════════════════
+  # 🏛️  板块一：政府/统计（续）
+  # ═══════════════════════════════════════════════════
+
+  - id: nbs_releases
+    name: NBS - Latest Releases (数据发布)
+    type: rss
+    country: CN
+    language: zh
+    category: statistics
+    url: https://www.stats.gov.cn/sj/zxfb/rss.xml
+    tags: [china_data, gdp_growth, inflation, industrial_profit, pmi]
+
+  - id: nbs_analysis
+    name: NBS - Data Analysis (数据解读)
+    type: rss
+    country: CN
+    language: zh
+    category: statistics
+    url: https://www.stats.gov.cn/sj/sjjd/rss.xml
+    tags: [china_data, gdp_growth, inflation, employment, income]
+
+  # ═══════════════════════════════════════════════════
+  # 🏛️  板块一：国际组织（续）
+  # ═══════════════════════════════════════════════════
+
+  - id: imf_blog
+    name: IMF Blog
+    type: rss
+    region: Global
+    language: en
+    category: international_org
+    url: https://www.imf.org/en/News/RSS
+    tags: [global_economy, fiscal_policy, debt, financial_stability]
+
+  - id: world_bank_news
+    name: World Bank News (JSON API)
+    type: worldbank_api
+    region: Global
+    language: en
+    category: international_org
+    url: https://search.worldbank.org/api/v2/news
+    tags: [global_economy, development, trade, infrastructure, poverty]
+
+  - id: cbo_publications_rss
+    name: Congressional Budget Office - Publications
+    type: rss
+    country: US
+    language: en
+    category: fiscal_policy
+    url: https://www.cbo.gov/publications/all/rss.xml
+    tags: [us_fiscal, budget, debt, deficit, cbo]
+
+  - id: usda_home_rss
+    name: USDA - Home
+    type: rss
+    country: US
+    language: en
+    category: government_news
+    url: https://www.usda.gov/rss/home.xml
+    tags: [agriculture, commodities, food, rural, government]
+
+  - id: usda_releases_rss
+    name: USDA - Latest Releases
+    type: rss
+    country: US
+    language: en
+    category: government_news
+    url: https://www.usda.gov/rss/latest-releases.xml
+    tags: [agriculture, commodities, food, policy, releases]
+
+  - id: usda_blogs_rss
+    name: USDA - Latest Blogs
+    type: rss
+    country: US
+    language: en
+    category: government_news
+    url: https://www.usda.gov/rss/latest-blogs.xml
+    tags: [agriculture, food, rural, blogs, policy]
+
+  # ── GDELT / 其它补充源 ──────────────────────
+  - id: gdelt_economic
+    name: GDELT Global Economic News
+    type: api
+    region: Global
+    language: en
+    category: event_monitor
+    url: https://api.gdeltproject.org/api/v2/doc/doc
+    tags: [global_economy, risk_sentiment, event_detection, trend_monitoring]
+
+  - id: newyorkfed_markets_api
+    name: New York Fed - Markets API
+    type: api
+    country: US
+    language: en
+    category: market_background
+    url: https://markets.newyorkfed.org/api/
+    tags: [nyfed, market_data, reserves, repo, rates]
+
+  # ═══════════════════════════════════════════════════
+  # 🔍  板块三：Google News 关键词搜索
+  # ═══════════════════════════════════════════════════
+
+  - id: google_news_china_economy
+    name: "Google News: China economy (EN, 1d)"
+    type: google_news_rss
+    country: CN
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=China%20economy%20when:1d&hl=en-US&gl=US&ceid=US:en"
+    tags: [china, economy, trade, gdp_growth]
+
+  - id: google_news_japan_inflation_boj
+    name: "Google News: Japan inflation BOJ (EN, 7d)"
+    type: google_news_rss
+    country: JP
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=Japan%20inflation%20BOJ%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [japan, inflation, boj, jpy]
+
+  - id: google_news_fed_rate
+    name: "Google News: Fed rate cut inflation (EN, 1d)"
+    type: google_news_rss
+    country: US
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=Fed%20rate%20cut%20inflation%20when:1d&hl=en-US&gl=US&ceid=US:en"
+    tags: [fed, interest_rate, inflation, usd]
+
+  - id: google_news_cn_econ
+    name: "Google News: 中国经济央行 (ZH, 1d)"
+    type: google_news_rss
+    country: CN
+    language: zh
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=%E4%B8%AD%E5%9B%BD%20%E7%BB%8F%E6%B5%8E%20%E5%A4%AE%E8%A1%8C%20when:1d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
+    tags: [china, pboc, monetary_policy, cny]
+
+  - id: google_news_cn_cpi_ppi_gdp
+    name: "Google News: 中国CPI PPI GDP (ZH, 7d)"
+    type: google_news_rss
+    country: CN
+    language: zh
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=%E4%B8%AD%E5%9B%BD%20CPI%20PPI%20GDP%20when:7d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
+    tags: [china, inflation, gdp_growth, real_estate]
+
+  - id: google_news_jp_econ_boj
+    name: "Google News: 日本経済日銀 (JA, 1d)"
+    type: google_news_rss
+    country: JP
+    language: ja
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=%E6%97%A5%E6%9C%AC%20%E7%B5%8C%E6%B8%88%20%E6%97%A5%E9%8A%80%20when:1d&hl=ja&gl=JP&ceid=JP:ja"
+    tags: [japan, boj, jpy, economy]
+
+  - id: google_news_jp_inflation_wages
+    name: "Google News: 日本インフレ賃金日銀 (JA, 7d)"
+    type: google_news_rss
+    country: JP
+    language: ja
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=%E6%97%A5%E6%9C%AC%20%E3%82%A4%E3%83%B3%E3%83%95%E3%83%AC%20%E8%B3%83%E9%87%91%20%E6%97%A5%E9%8A%80%20when:7d&hl=ja&gl=JP&ceid=JP:ja"
+    tags: [japan, inflation, wages, boj, jpy]
+
+  # ── Google News 补充关键词 ─────────────────────
+  - id: google_news_iran_oil
+    name: "Google News: Iran War Oil Energy (EN, 7d)"
+    type: google_news_rss
+    region: Global
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=Iran%20war%20oil%20energy%20impact%20economy%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [geopolitics, energy, oil, risk_sentiment, global_economy]
+
+  - id: google_news_ecb
+    name: "Google News: ECB Rate Hike Eurozone (EN, 7d)"
+    type: google_news_rss
+    region: Eurozone
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=ECB%20rate%20hike%20inflation%20eurozone%20economy%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [ecb, eur, monetary_policy, inflation, eurozone]
+
+  - id: google_news_treasury
+    name: "Google News: Treasury Yields Bond US Debt (EN, 7d)"
+    type: google_news_rss
+    country: US
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=treasury%20yields%20bond%20market%20US%20debt%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [us_treasury, bond_yield, debt, usd]
+
+  - id: google_news_gold
+    name: "Google News: Gold Price Safe Haven (EN, 7d)"
+    type: google_news_rss
+    region: Global
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=gold%20price%20safe%20haven%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [gold, safe_haven, geopolitics, commodities]
+
+  - id: google_news_cn_property
+    name: "Google News: 中国房地产楼市 (ZH, 7d)"
+    type: google_news_rss
+    country: CN
+    language: zh
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=%E4%B8%AD%E5%9B%BD%20%E6%88%BF%E5%9C%B0%E4%BA%A7%20%E6%A5%BC%E5%B8%82%20when:7d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
+    tags: [china_property, real_estate, china_credit, financial_stability]
+
+  - id: google_news_usdjpy_intervention
+    name: "Google News: ドル円為替介入 (JA, 7d)"
+    type: google_news_rss
+    country: JP
+    language: ja
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=%E3%83%89%E3%83%AB%E5%86%86%20%E7%82%BA%E6%9B%BF%E4%BB%8B%E5%85%A5%20when:7d&hl=ja&gl=JP&ceid=JP:ja"
+    tags: [japan, jpy, fx_intervention, usdjpy, boj]
+
+  - id: google_news_us_inflation_data
+    name: "Google News: US CPI PPI inflation data (EN, 7d)"
+    type: google_news_rss
+    country: US
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=US%20CPI%20PPI%20inflation%20data%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [us_data, inflation, cpi, ppi]
+
+  - id: google_news_us_jobs_data
+    name: "Google News: US jobs employment nonfarm payrolls (EN, 7d)"
+    type: google_news_rss
+    country: US
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=US%20jobs%20employment%20nonfarm%20payrolls%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [us_data, employment, jobs, nonfarm_payrolls]
+
+  - id: google_news_us_gdp_data
+    name: "Google News: US GDP economic growth (EN, 7d)"
+    type: google_news_rss
+    country: US
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=US%20GDP%20economic%20growth%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [us_data, gdp_growth, economy]
+
+  - id: google_news_jp_cpi
+    name: "Google News: Japan CPI (JA, 7d)"
+    type: google_news_rss
+    country: JP
+    language: ja
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=%E6%97%A5%E6%9C%AC%20%E6%B6%88%E8%B2%BB%E8%80%85%E7%89%A9%E4%BE%A1%E6%8C%87%E6%95%B0%20CPI%20when:7d&hl=ja&gl=JP&ceid=JP:ja"
+    tags: [japan, inflation, cpi]
+
+  - id: google_news_jp_gdp
+    name: "Google News: Japan GDP growth (JA, 7d)"
+    type: google_news_rss
+    country: JP
+    language: ja
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=%E6%97%A5%E6%9C%AC%20GDP%20%E7%B5%8C%E6%B8%88%E6%88%90%E9%95%B7%E7%8E%87%20when:7d&hl=ja&gl=JP&ceid=JP:ja"
+    tags: [japan, gdp_growth, economy]
+
+  - id: google_news_eurozone_macro
+    name: "Google News: Eurozone ECB inflation GDP (EN, 7d)"
+    type: google_news_rss
+    region: Eurozone
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=Eurozone%20ECB%20inflation%20GDP%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [eurozone, ecb, inflation, gdp_growth]
+
+  - id: google_news_uk_inflation
+    name: "Google News: Bank of England UK inflation rate (EN, 7d)"
+    type: google_news_rss
+    country: UK
+    language: en
+    category: search_rss
+    url: "https://news.google.com/rss/search?q=Bank%20of%20England%20UK%20inflation%20rate%20when:7d&hl=en-GB&gl=GB&ceid=GB:en"
+    tags: [uk, bank_of_england, inflation, interest_rate]
+
+  - id: bea_api
+    name: BEA - Data API
+    type: api
+    country: US
+    language: en
+    category: statistics
+    url: https://apps.bea.gov/api/data
+    tags: [us_data, gdp_growth, income, trade, bea]
+
+  - id: bls_public_data_api
+    name: BLS - Public Data API
+    type: api
+    country: US
+    language: en
+    category: statistics
+    url: https://api.bls.gov/publicAPI/v2/
+    tags: [us_data, inflation, employment, wages, bls]
+
+  - id: fred_api
+    name: FRED - API
+    type: api
+    country: US
+    language: en
+    category: statistics
+    url: https://api.stlouisfed.org/fred/
+    tags: [us_data, rates, inflation, fx, fred]
+
+  - id: congress_gov_api
+    name: Congress.gov - API
+    type: api
+    country: US
+    language: en
+    category: fiscal_policy
+    url: https://api.congress.gov/
+    tags: [us_fiscal, legislation, budget, debt, congress]
+
+  - id: sec_edgar_api
+    name: SEC EDGAR - API
+    type: api
+    country: US
+    language: en
+    category: earnings
+    url: https://data.sec.gov/
+    tags: [sec, filings, earnings, disclosure, regulation]
+
+  - id: eia_api
+    name: EIA - Open Data API
+    type: api
+    country: US
+    language: en
+    category: commodity_data
+    url: https://api.eia.gov/v2/
+    tags: [energy, oil, gas, electricity, commodities]
+
+  - id: finra_api
+    name: FINRA - API
+    type: api
+    country: US
+    language: en
+    category: market_background
+    url: https://api.finra.org/
+    tags: [finra, market_structure, regulation, flows, background]
+
+  - id: cninfo_api
+    name: CNINFO - Data API
+    type: api
+    country: CN
+    language: zh
+    category: earnings
+    url: https://webapi.cninfo.com.cn/
+    tags: [cninfo, disclosure, earnings, filings, a_share]
+
+  # ═══════════════════════════════════════════════════
+  # 🌐  板块二：财经媒体
+  # ═══════════════════════════════════════════════════
+
+  - id: bbc_business
+    name: BBC Business
+    type: rss
+    region: Global
+    language: en
+    category: news_media
+    url: https://feeds.bbci.co.uk/news/business/rss.xml
+    tags: [global_economy, business, markets, trade]
+
+  - id: nyt_economy
+    name: NYT Economy
+    type: rss
+    country: US
+    language: en
+    category: news_media
+    url: https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml
+    tags: [us_data, economy, policy, gdp_growth]
+
+  - id: scmp_business
+    name: SCMP Business
+    type: rss
+    region: Asia
+    language: en
+    category: news_media
+    url: https://www.scmp.com/rss/4/feed
+    tags: [asia, china, business, economy, hk]
+
+  - id: investing_com
+    name: Investing.com - Global Markets
+    type: rss
+    region: Global
+    language: en
+    category: news_media
+    url: https://www.investing.com/rss/news.rss
+    tags: [markets, commodities, fx, rates, global_economy]
+
+  - id: seeking_alpha
+    name: Seeking Alpha - Macro
+    type: rss
+    country: US
+    language: en
+    category: news_media
+    url: https://seekingalpha.com/feed.xml
+    tags: [us_equities, earnings, macro, analysis]
+
+  - id: telegraph_business
+    name: Telegraph Business
+    type: rss
+    country: UK
+    language: en
+    category: news_media
+    url: https://www.telegraph.co.uk/business/rss
+    tags: [uk, europe, business, economy]
+
+  - id: ft_chinese
+    name: FT中文网
+    type: rss
+    region: Global
+    language: zh
+    category: news_media
+    url: https://www.ftchinese.com/rss/news
+    tags: [global_economy, finance, policy, markets]
+
+  - id: ifeng_finance
+    name: 凤凰网财经
+    type: rss
+    country: CN
+    language: zh
+    category: news_media
+    url: https://finance.ifeng.com/rss/finance.xml
+    tags: [china, finance, markets, economy]
+
+  - id: chinanews_finance
+    name: 中国新闻网财经
+    type: rss
+    country: CN
+    language: zh
+    category: news_media
+    url: https://www.chinanews.com.cn/rss/finance.xml
+    tags: [china, finance, economy, policy]
+
+  # ═══════════════════════════════════════════════════
+  # 💡  板块四：科技与 AI（category: tech_media / tech_search → tech 板块）
+  # ═══════════════════════════════════════════════════
+
+  - id: techcrunch
+    name: TechCrunch
+    type: rss
+    region: Global
+    language: en
+    category: tech_media
+    url: https://techcrunch.com/feed/
+    tags: [tech, startup, ai, venture]
+
+  - id: the_verge
+    name: The Verge
+    type: rss
+    region: Global
+    language: en
+    category: tech_media
+    url: https://www.theverge.com/rss/index.xml
+    tags: [tech, consumer_tech, ai, gadgets]
+
+  - id: ars_technica
+    name: Ars Technica
+    type: rss
+    region: Global
+    language: en
+    category: tech_media
+    url: https://feeds.arstechnica.com/arstechnica/index
+    tags: [tech, science, ai, computing]
+
+  - id: mit_tech_review
+    name: MIT Technology Review
+    type: rss
+    region: Global
+    language: en
+    category: tech_media
+    url: https://www.technologyreview.com/feed/
+    tags: [tech, ai, research, deep_tech]
+
+  - id: venturebeat_ai
+    name: VentureBeat - AI
+    type: rss
+    region: Global
+    language: en
+    category: tech_media
+    url: https://venturebeat.com/category/ai/feed/
+    tags: [ai, machine_learning, enterprise_tech]
+
+  - id: google_news_ai_en
+    name: "Google News: artificial intelligence (EN, 1d)"
+    type: google_news_rss
+    region: Global
+    language: en
+    category: tech_search
+    url: "https://news.google.com/rss/search?q=artificial%20intelligence%20when:1d&hl=en-US&gl=US&ceid=US:en"
+    tags: [ai, machine_learning, tech]
+
+  - id: google_news_ai_zh
+    name: "Google News: 人工智能 大模型 (ZH, 1d)"
+    type: google_news_rss
+    country: CN
+    language: zh
+    category: tech_search
+    url: "https://news.google.com/rss/search?q=%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%20%E5%A4%A7%E6%A8%A1%E5%9E%8B%20when:1d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
+    tags: [ai, llm, tech, china]
+
+  - id: google_news_semiconductor
+    name: "Google News: semiconductor chip Nvidia (EN, 7d)"
+    type: google_news_rss
+    region: Global
+    language: en
+    category: tech_search
+    url: "https://news.google.com/rss/search?q=semiconductor%20chip%20Nvidia%20AI%20when:7d&hl=en-US&gl=US&ceid=US:en"
+    tags: [semiconductor, chip, ai, tech]
+
+  # ═══════════════════════════════════════════════════
+  # 🔥  板块五：热点速览（category: hot_search → hot 板块）
+  #     Google News 综合头条 trending；渲染时再排除财经/科技/AI 条目
+  # ═══════════════════════════════════════════════════
+
+  - id: google_news_top_en
+    name: "Google News: Top Stories (EN)"
+    type: google_news_rss
+    region: Global
+    language: en
+    category: hot_search
+    url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"
+    tags: [top_stories, trending, general]
+
+  - id: google_news_top_zh
+    name: "Google News: 头条 (ZH)"
+    type: google_news_rss
+    country: CN
+    language: zh
+    category: hot_search
+    url: "https://news.google.com/rss?hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
+    tags: [top_stories, trending, general]

@@ -1,0 +1,28 @@
+{
+  "mode": "briefing",
+  "output_language": "zh-CN",
+  "output_format": "markdown",
+  "max_items_per_source": 5,
+  "max_ranked_items": 20,
+  "request_pause_seconds": 0.3,
+  "focus_assets": ["USD", "JPY", "CNY", "Gold", "Oil", "Bonds", "Equities"],
+  "output_dir": "/tmp/economic-news-runtime",
+  "deliver_email": false,
+  "market_data": {
+    "enabled": true,
+    "provider": "yfinance",
+    "source_config": "sources/market_sources.yaml",
+    "period": "3mo",
+    "interval": "1d"
+  },
+  "filters": {},
+  "graph": {
+    "research_max_items": 10,
+    "official_max_items": 10,
+    "media_max_items": 20,
+    "tech_max_items": 6,
+    "google_max_items": 6,
+    "hot_max_items": 5,
+    "country_balance": { "CN": 4, "US": 4, "JP": 4, "default": 99 }
+  }
+}

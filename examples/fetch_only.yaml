@@ -1,0 +1,12 @@
+{
+  "mode": "fetch",
+  "output_language": "zh-CN",
+  "output_format": "json",
+  "max_items_per_source": 3,
+  "max_ranked_items": 20,
+  "request_pause_seconds": 0.3,
+  "filters": {
+    "countries": ["US", "JP", "CN"],
+    "languages": ["en", "zh", "ja"]
+  }
+}

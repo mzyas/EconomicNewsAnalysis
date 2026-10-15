@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NormalizedEconomicNewsItem",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "url",
+    "summary",
+    "published_at",
+    "fetched_at",
+    "source",
+    "tags"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "translated_title": { "type": "string" },
+    "url": { "type": "string" },
+    "summary": { "type": "string" },
+    "published_at": { "type": "string" },
+    "fetched_at": { "type": "string" },
+    "source": {
+      "type": "object",
+      "required": ["id", "name", "country", "language"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "country": { "type": "string" },
+        "language": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "discovery": {
+      "type": "object",
+      "required": ["channel", "feed_source_id", "feed_source_name", "original_url", "verification_status", "error"],
+      "properties": {
+        "channel": { "type": "string", "enum": ["google_news"] },
+        "feed_source_id": { "type": "string" },
+        "feed_source_name": { "type": "string" },
+        "original_url": { "type": "string" },
+        "verification_status": { "type": "string", "enum": ["verified", "unverified"] },
+        "error": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "relevance_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "ranking_reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

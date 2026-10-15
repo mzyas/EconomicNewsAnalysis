@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EconomicNewsRuntimeResult",
+  "type": "object",
+  "required": [
+    "run_id",
+    "skill",
+    "mode",
+    "status",
+    "pipeline_status",
+    "output_status",
+    "delivery_status",
+    "delivery_kind",
+    "started_at",
+    "completed_at",
+    "output_language",
+    "statistics",
+    "items",
+    "analyses",
+    "errors",
+    "warnings",
+    "output_files"
+  ],
+  "properties": {
+    "run_id": { "type": "string" },
+    "skill": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["analyze", "fetch", "briefing", "deliver", "check", "list-sources", "trend"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["running", "success", "partial_success", "failed"]
+    },
+    "pipeline_status": {
+      "type": "string",
+      "enum": ["running", "success", "partial_success", "failed"]
+    },
+    "output_status": {
+      "type": "string",
+      "enum": ["success", "partial_success", "failed", "skipped"]
+    },
+    "delivery_status": {
+      "type": "string",
+      "enum": ["success", "failed", "skipped"]
+    },
+    "delivery_requested": { "type": "boolean" },
+    "email_send_attempted": { "type": "boolean" },
+    "delivery_skip_reason": { "type": ["string", "null"] },
+    "effective_delivery_config": {
+      "type": "object",
+      "required": [
+        "mode",
+        "profile_config",
+        "deliver_email",
+        "email_send",
+        "recipient_count"
+      ],
+      "properties": {
+        "mode": { "type": "string" },
+        "profile_config": { "type": ["string", "null"] },
+        "deliver_email": { "type": "boolean" },
+        "email_send": { "type": "boolean" },
+        "recipient_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "delivery_kind": {
+      "type": "string",
+      "enum": [
+        "report_with_attachment",
+        "report_without_attachment",
+        "failure_notification",
+        "none"
+      ]
+    },
+    "started_at": { "type": "string" },
+    "completed_at": { "type": ["string", "null"] },
+    "output_language": { "type": "string" },
+    "run_summary": {
+      "type": "object",
+      "properties": {
+        "total_seconds": { "type": "integer" },
+        "reserve_seconds": { "type": "integer" },
+        "remaining_seconds": { "type": "number" },
+        "degraded": { "type": "boolean" },
+        "degradation_reason": { "type": ["string", "null"] },
+        "blocked_stage": { "type": ["string", "null"] },
+        "blocked_item": { "type": ["string", "null"] },
+        "checkpoints": { "type": "array" }
+      },
+      "additionalProperties": false
+    },
+    "statistics": {
+      "type": "object",
+      "required": [
+        "sources_successful",
+        "sources_failed",
+        "sources_skipped",
+        "items_fetched",
+        "items_normalized",
+        "items_ranked",
+        "items_analyzed"
+      ],
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "items": {
+      "type": "array",
+      "items": { "$ref": "news_item.schema.json" }
+    },
+    "analyses": {
+      "type": "array",
+      "items": { "$ref": "output_schema.json" }
+    },
+    "llm_audit": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "provider", "model"],
+        "properties": {
+          "node": { "type": "string" },
+          "provider": { "type": "string" },
+          "model": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "errors": { "type": "array" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "market_context": {
+      "type": "object",
+      "required": ["enabled", "provider", "status", "snapshots", "errors"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "provider": { "type": ["string", "null"] },
+        "status": {
+          "type": "string",
+          "enum": ["success", "partial", "failed", "skipped"]
+        },
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "symbol_id",
+              "ticker",
+              "name",
+              "asset_class",
+              "region",
+              "last_price",
+              "change_pct",
+              "period",
+              "interval",
+              "as_of",
+              "provider",
+              "status",
+              "error"
+            ],
+            "properties": {
+              "symbol_id": { "type": "string" },
+              "ticker": { "type": "string" },
+              "name": { "type": "string" },
+              "name_zh": { "type": ["string", "null"] },
+              "asset_class": { "type": "string" },
+              "region": { "type": "string" },
+              "last_price": { "type": ["number", "null"] },
+              "change_pct": { "type": ["number", "null"] },
+              "period": { "type": "string" },
+              "interval": { "type": "string" },
+              "as_of": { "type": ["string", "null"] },
+              "provider": { "type": "string" },
+              "status": { "type": "string", "enum": ["success", "failed"] },
+              "error": { "type": ["string", "null"] },
+              "asset_type": { "type": "string" },
+              "display_precision": { "type": "integer" },
+              "change_1w_pct": { "type": ["number", "null"] },
+              "change_1m_pct": { "type": ["number", "null"] },
+              "change_1w_abs": { "type": ["number", "null"] },
+              "change_1m_abs": { "type": ["number", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "errors": { "type": "array" }
+      },
+      "additionalProperties": false
+    },
+    "daily_market_impact": {
+      "type": "object",
+      "required": ["rates_bonds", "fx", "equities", "commodities", "risk_appetite"],
+      "properties": {
+        "rates_bonds": { "type": "string" },
+        "fx": { "type": "string" },
+        "equities": { "type": "string" },
+        "commodities": { "type": "string" },
+        "risk_appetite": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "daily_mainlines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["headline", "supporting_item_ids"],
+        "properties": {
+          "headline": { "type": "string" },
+          "supporting_item_ids": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "daily_weekly_watchlist": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "output_files": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "briefing_markdown": { "type": "string" },
+    "analysis_markdown": { "type": "string" },
+    "sources": { "type": "array" },
+    "check": { "type": "object" },
+    "skipped_sources": { "type": "array" },
+    "email_sent": { "type": "boolean" },
+    "trend_markdown": { "type": "string" },
+    "trend_table": {
+      "type": "object",
+      "properties": {
+        "rows": { "type": "array" },
+        "markdown": { "type": "string" },
+        "html": { "type": "string" },
+        "status": { "type": "string", "enum": ["success", "partial", "failed", "no_data"] },
+        "as_of": { "type": ["string", "null"] },
+        "error": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

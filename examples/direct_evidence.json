@@ -1,0 +1,22 @@
+{
+  "mode": "briefing",
+  "fetch_enabled": false,
+  "output_language": "zh-CN",
+  "output_format": "markdown",
+  "focus_assets": ["CNY", "USD"],
+  "graph": {
+    "evidence_enabled": true,
+    "temperature": 0.2,
+    "research_max_items": 3
+  },
+  "input_items": [
+    {
+      "title": "中国人民银行维持利率不变 通胀压力持续",
+      "summary": "人民银行公布最新利率决议，维持政策利率不变，通胀仍为主要考量因素。未来政策将依据数据而定。",
+      "url": "https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/2026062211021396080/index.html",
+      "source": "PBoC",
+      "region": "中国",
+      "tags": ["货币政策", "利率"]
+    }
+  ]
+}
