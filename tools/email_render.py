@@ -304,41 +304,9 @@ def md_to_plain(text: str) -> str:
     return text
 
 
-def build_combined_email_html(
-    trend_rows: list[dict],
-    briefing_markdown: str | None = None,
-    briefing_html: str | None = None,
-    as_of: str | None = None,
-    has_news_items: bool = False,
-    version: str = "",
-    report_date: str | None = None,
-) -> str:
+def _trend_rows_html(trend_rows: list[dict]) -> str:
+    """Table body rows for the trend table (failed rows span the data columns)."""
     from .trend_table import _direction_color, _fmt_change, _fmt_price
-
-    """Build a full email-ready HTML body that combines trend table + optional briefing.
-
-    Parameters
-    ----------
-    trend_rows : list[dict]
-        The ``rows`` array from ``trend_table`` (each a TrendRow-like dict).
-    briefing_markdown : str or None
-        Markdown text of the briefing (used as fallback when briefing_html is None).
-    briefing_html : str or None
-        Pre-rendered HTML of the briefing section.
-    as_of : str or None
-        "Data as of" timestamp shown in the trend table header.
-    has_news_items : bool
-        Whether to show the news briefing section (False = skip).
-    version : str
-        Skill version shown in footer.
-    report_date : str or None
-        Date string for the email header (default: as_of[:10]).
-
-    Returns
-    -------
-    str
-        HTML content suitable for injection into the ``<body>`` of an MML message.
-    """
 
     # ── Trend table rows ────────────────────────────────────────────────
     trend_rows_html = ""
@@ -375,6 +343,13 @@ def build_combined_email_html(
             f"</tr>"
         )
 
+    return trend_rows_html
+
+
+def _briefing_section_html(
+    briefing_html: str | None, briefing_markdown: str | None, has_news_items: bool
+) -> str:
+    """The key-news section, or an empty string when there is nothing to show."""
     # ── Briefing section ────────────────────────────────────────────────
     briefing_html_section = ""
     if has_news_items:
@@ -388,6 +363,46 @@ def build_combined_email_html(
 <hr style="border:none;border-top:1px solid #e9ecef;margin:16px 0;">
 <h2 style="margin:0 0 12px;font-size:15px;font-weight:600;color:#333;border-left:3px solid #3498db;padding-left:10px;">📰 今日重点新闻</h2>
 {body_content}"""
+
+    return briefing_html_section
+
+
+def build_combined_email_html(
+    trend_rows: list[dict],
+    briefing_markdown: str | None = None,
+    briefing_html: str | None = None,
+    as_of: str | None = None,
+    has_news_items: bool = False,
+    version: str = "",
+    report_date: str | None = None,
+) -> str:
+    """Build a full email-ready HTML body that combines trend table + optional briefing.
+
+    Parameters
+    ----------
+    trend_rows : list[dict]
+        The ``rows`` array from ``trend_table`` (each a TrendRow-like dict).
+    briefing_markdown : str or None
+        Markdown text of the briefing (used as fallback when briefing_html is None).
+    briefing_html : str or None
+        Pre-rendered HTML of the briefing section.
+    as_of : str or None
+        "Data as of" timestamp shown in the trend table header.
+    has_news_items : bool
+        Whether to show the news briefing section (False = skip).
+    version : str
+        Skill version shown in footer.
+    report_date : str or None
+        Date string for the email header (default: as_of[:10]).
+
+    Returns
+    -------
+    str
+        HTML content suitable for injection into the ``<body>`` of an MML message.
+    """
+
+    trend_rows_html = _trend_rows_html(trend_rows)
+    briefing_html_section = _briefing_section_html(briefing_html, briefing_markdown, has_news_items)
 
     return f"""\
 <h2 style="margin:0 0 12px;font-size:15px;font-weight:600;color:#333;border-left:3px solid #f1c40f;padding-left:10px;">📊 市场趋势表</h2>
