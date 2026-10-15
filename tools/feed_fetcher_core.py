@@ -136,13 +136,18 @@ def _clean_html(raw: str) -> str:
     return clean.strip()
 
 
-def fetch_rss(
-    source: Source, max_items: int, connect_timeout: int, read_timeout: int
-) -> tuple[list[FeedItem], str | None]:
-    """Fetch and parse an RSS/Atom feed. Returns (items, error)."""
-    req = urllib.request.Request(
-        source.url, headers={"User-Agent": "Hermes-Economic-News-Fetcher/1.0"}
-    )
+_ATOM_NS = "http://www.w3.org/2005/Atom"
+
+
+def _fetch_bytes(
+    url: str, connect_timeout: int, read_timeout: int
+) -> tuple[bytes | None, str | None]:
+    """GET ``url`` (gzip-aware). Returns ``(body, None)`` or ``(None, error)``.
+
+    ``error`` is ``str(exc)`` for unexpected failures, which is ``""`` for an exception
+    without a message, so callers must test ``error is not None``.
+    """
+    req = urllib.request.Request(url, headers={"User-Agent": "Hermes-Economic-News-Fetcher/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=connect_timeout) as resp:
             # Set read timeout separately so slow transfers don't use connect timeout
@@ -155,19 +160,16 @@ def fetch_rss(
             if raw[:2] == b"\x1f\x8b":
                 raw = gzip.decompress(raw)
     except urllib.error.HTTPError as e:
-        return [], f"HTTP {e.code}"
+        return None, f"HTTP {e.code}"
     except urllib.error.URLError as e:
-        return [], f"Network: {e.reason}"
+        return None, f"Network: {e.reason}"
     except Exception as e:
-        return [], str(e)
+        return None, str(e)
+    return raw, None
 
-    try:
-        root = ET.fromstring(raw)
-    except ET.ParseError as e:
-        return [], f"XML parse error: {e}"
 
-    atom_ns = "http://www.w3.org/2005/Atom"
-
+def _feed_entries(root: ET.Element) -> list[ET.Element]:
+    """The <item> / <entry> elements of an RSS or Atom document."""
     # Find items/entries
     items_el = []
     if root.tag.endswith("rss"):
@@ -175,14 +177,75 @@ def fetch_rss(
         if channel is not None:
             items_el = channel.findall("item")
     elif root.tag.endswith("feed"):
-        items_el = root.findall(f"{{{atom_ns}}}entry") or root.findall("entry")
+        items_el = root.findall(f"{{{_ATOM_NS}}}entry") or root.findall("entry")
     else:
         # Try both
         channel = root.find("channel")
         if channel is not None:
             items_el = channel.findall("item")
         if not items_el:
-            items_el = root.findall(f"{{{atom_ns}}}entry") or root.findall("entry")
+            items_el = root.findall(f"{{{_ATOM_NS}}}entry") or root.findall("entry")
+
+    return items_el
+
+
+def _parse_feed_entry(el: ET.Element, source: Source, now: str) -> FeedItem | None:
+    """One feed entry as a FeedItem, or ``None`` when it has no title."""
+    title = _find_text(el, "title", _ATOM_NS)
+    link = _get_link(el)
+    summary = (
+        _find_text(el, "description")
+        or _find_text(el, "summary", _ATOM_NS)
+        or _find_text(el, "content", _ATOM_NS)
+    )
+    published_raw = (
+        _find_text(el, "pubDate")
+        or _find_text(el, "pubTime")
+        or _find_text(el, "published", _ATOM_NS)
+        or _find_text(el, "updated", _ATOM_NS)
+    )
+    published = _parse_pubdate(published_raw) if published_raw else ""
+    summary_clean = _clean_html(summary)
+
+    if not title:
+        return None
+
+    # Normalize link: prepend https:// if missing (some feeds like PBoC omit it)
+    if link and link.startswith("www."):
+        link = "https://" + link
+
+    item_hash = hashlib.md5((title + (link or "")).encode()).hexdigest()[:12]
+
+    return FeedItem(
+        source_id=source.id,
+        source_name=source.name,
+        title=title,
+        link=link,
+        summary=summary_clean,
+        published=published,
+        fetched_at=now,
+        item_hash=item_hash,
+        source_tags=source.tags,
+        source_country=source.country or source.region,
+        source_language=source.language,
+        source_category=source.category,
+    )
+
+
+def fetch_rss(
+    source: Source, max_items: int, connect_timeout: int, read_timeout: int
+) -> tuple[list[FeedItem], str | None]:
+    """Fetch and parse an RSS/Atom feed. Returns (items, error)."""
+    raw, error = _fetch_bytes(source.url, connect_timeout, read_timeout)
+    if error is not None:
+        return [], error
+
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError as e:
+        return [], f"XML parse error: {e}"
+
+    items_el = _feed_entries(root)
 
     now = datetime.now(timezone.utc).isoformat()
     items: list[FeedItem] = []
@@ -191,47 +254,10 @@ def fetch_rss(
     for el in items_el:
         if count >= max_items:
             break
-        title = _find_text(el, "title", atom_ns)
-        link = _get_link(el)
-        summary = (
-            _find_text(el, "description")
-            or _find_text(el, "summary", atom_ns)
-            or _find_text(el, "content", atom_ns)
-        )
-        published_raw = (
-            _find_text(el, "pubDate")
-            or _find_text(el, "pubTime")
-            or _find_text(el, "published", atom_ns)
-            or _find_text(el, "updated", atom_ns)
-        )
-        published = _parse_pubdate(published_raw) if published_raw else ""
-        summary_clean = _clean_html(summary)
-
-        if not title:
+        item = _parse_feed_entry(el, source, now)
+        if item is None:
             continue
-
-        # Normalize link: prepend https:// if missing (some feeds like PBoC omit it)
-        if link and link.startswith("www."):
-            link = "https://" + link
-
-        item_hash = hashlib.md5((title + (link or "")).encode()).hexdigest()[:12]
-
-        items.append(
-            FeedItem(
-                source_id=source.id,
-                source_name=source.name,
-                title=title,
-                link=link,
-                summary=summary_clean,
-                published=published,
-                fetched_at=now,
-                item_hash=item_hash,
-                source_tags=source.tags,
-                source_country=source.country or source.region,
-                source_language=source.language,
-                source_category=source.category,
-            )
-        )
+        items.append(item)
         count += 1
 
     return items, None
@@ -240,30 +266,60 @@ def fetch_rss(
 # ── World Bank JSON API fetcher ─────────────────────────────────────────────
 
 
+def _worldbank_item(doc: dict, source: Source, now: str) -> FeedItem | None:
+    """One World Bank search hit as a FeedItem, or ``None`` when it is not an English news article."""
+    import re
+
+    title_raw = doc.get("title", {})
+    if isinstance(title_raw, dict):
+        title = title_raw.get("cdata!", "") or title_raw.get("#text", "")
+    else:
+        title = str(title_raw) if title_raw else ""
+
+    url = doc.get("url", "")
+    cqpath = doc.get("cqpath", "")
+
+    # Filter: only English news articles
+    if "/news/" not in url:
+        return None
+    if "/en/" not in cqpath and "/en/" not in url:
+        return None
+
+    # Extract date from URL: /news/press-release/2026/06/05/...
+    date_match = re.search(r"/news/[\w-]+/(\d{4}/\d{2}/\d{2})/", url)
+    if date_match:
+        published = date_match.group(1).replace("/", "-")
+    else:
+        published = ""
+
+    item_hash = hashlib.md5((title + url).encode()).hexdigest()[:12]
+
+    return FeedItem(
+        source_id=source.id,
+        source_name=source.name,
+        title=title,
+        link=url,
+        summary="",
+        published=published,
+        fetched_at=now,
+        item_hash=item_hash,
+        source_tags=source.tags,
+        source_country=source.country or source.region or "Global",
+        source_language=source.language,
+        source_category=source.category,
+    )
+
+
 def fetch_worldbank_api(
     source: Source, max_items: int, connect_timeout: int, read_timeout: int
 ) -> tuple[list[FeedItem], str | None]:
     """Fetch World Bank news via search API JSON, convert to FeedItems."""
-    import re
-
     api_url = f"{source.url}?format=json&rows={max(max_items * 5, 30)}&order=desc&qdr=w"
-    req = urllib.request.Request(
-        api_url, headers={"User-Agent": "Hermes-Economic-News-Fetcher/1.0"}
-    )
+    raw, error = _fetch_bytes(api_url, connect_timeout, read_timeout)
+    if error is not None:
+        return [], error
     try:
-        with urllib.request.urlopen(req, timeout=connect_timeout) as resp:
-            try:
-                resp.fp.raw._sock.settimeout(read_timeout)
-            except AttributeError:
-                pass
-            raw = resp.read()
-            if raw[:2] == b"\x1f\x8b":
-                raw = gzip.decompress(raw)
-            data = json.loads(raw)
-    except urllib.error.HTTPError as e:
-        return [], f"HTTP {e.code}"
-    except urllib.error.URLError as e:
-        return [], f"Network: {e.reason}"
+        data = json.loads(raw)
     except Exception as e:
         return [], str(e)
 
@@ -274,47 +330,10 @@ def fetch_worldbank_api(
     for doc in data.get("documents", {}).values():
         if count >= max_items:
             break
-
-        title_raw = doc.get("title", {})
-        if isinstance(title_raw, dict):
-            title = title_raw.get("cdata!", "") or title_raw.get("#text", "")
-        else:
-            title = str(title_raw) if title_raw else ""
-
-        url = doc.get("url", "")
-        cqpath = doc.get("cqpath", "")
-
-        # Filter: only English news articles
-        if "/news/" not in url:
+        item = _worldbank_item(doc, source, now)
+        if item is None:
             continue
-        if "/en/" not in cqpath and "/en/" not in url:
-            continue
-
-        # Extract date from URL: /news/press-release/2026/06/05/...
-        date_match = re.search(r"/news/[\w-]+/(\d{4}/\d{2}/\d{2})/", url)
-        if date_match:
-            published = date_match.group(1).replace("/", "-")
-        else:
-            published = ""
-
-        item_hash = hashlib.md5((title + url).encode()).hexdigest()[:12]
-
-        items.append(
-            FeedItem(
-                source_id=source.id,
-                source_name=source.name,
-                title=title,
-                link=url,
-                summary="",
-                published=published,
-                fetched_at=now,
-                item_hash=item_hash,
-                source_tags=source.tags,
-                source_country=source.country or source.region or "Global",
-                source_language=source.language,
-                source_category=source.category,
-            )
-        )
+        items.append(item)
         count += 1
 
     return items, None
@@ -399,7 +418,8 @@ def list_sources(sources: list[Source]) -> None:
 # ── CLI ─────────────────────────────────────────────────────────────────────
 
 
-def main() -> int:
+def _build_parser() -> argparse.ArgumentParser:
+    """The command-line interface."""
     default_config = Path(__file__).resolve().parent.parent / "sources" / "rss_sources.yaml"
 
     parser = argparse.ArgumentParser(
@@ -452,15 +472,11 @@ def main() -> int:
     parser.add_argument(
         "--log", type=Path, help="Log fetch result to JSONL file for tracking fetch history"
     )
-    args = parser.parse_args()
+    return parser
 
-    if not args.source.exists():
-        print(f"Config not found: {args.source}", file=sys.stderr)
-        return 1
 
-    sources = load_config(args.source)
-
-    # Filters
+def _filter_sources(sources: list[Source], args: argparse.Namespace) -> list[Source]:
+    """Apply --country / --tags / --language."""
     if args.country:
         countries = {c.strip().upper() for c in args.country.split(",")}
         sources = [
@@ -472,6 +488,67 @@ def main() -> int:
     if args.language:
         langs = {lang.strip().lower() for lang in args.language.split(",")}
         sources = [s for s in sources if s.language in langs]
+    return sources
+
+
+def _compact_items(results: dict) -> None:
+    """Keep only the summary fields of every item (--compact), in place."""
+    compact = []
+    for item in results["items"]:
+        compact.append(
+            {
+                k: item[k]
+                for k in ["title", "source_name", "link", "published", "summary"]
+                if k in item
+            }
+        )
+    results["items"] = compact
+
+
+def _append_fetch_log(log_path: Path, results: dict) -> None:
+    """Append one JSONL entry about this fetch (--log)."""
+    log_entry = {
+        "fetched_at": results["fetched_at"],
+        "sources_successful": results["sources_successful"],
+        "sources_failed": results["sources_failed"],
+        "total_items": results["total_items"],
+        "failed_ids": [e["id"] for e in results.get("errors", [])],
+    }
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "a") as f:
+        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+
+def _emit_results(args: argparse.Namespace, results: dict, output: str) -> None:
+    """Write the JSON to --output (with a summary) or print it."""
+    if args.output:
+        args.output.write_text(output, encoding="utf-8")
+        error_count = len(results["errors"])
+        skipped_count = len(results["skipped"])
+        print(
+            f"Fetched {results['total_items']} items from "
+            f"{results['sources_successful']} sources → {args.output}"
+        )
+        if error_count:
+            print(f"  {error_count} source(s) failed (see errors in JSON)")
+        if skipped_count:
+            print(f"  {skipped_count} source(s) skipped (official_page/api)")
+    else:
+        print(output)
+
+
+def main() -> int:
+    parser = _build_parser()
+    args = parser.parse_args()
+
+    if not args.source.exists():
+        print(f"Config not found: {args.source}", file=sys.stderr)
+        return 1
+
+    sources = load_config(args.source)
+
+    # Filters
+    sources = _filter_sources(sources, args)
 
     if args.list:
         list_sources(sources)
@@ -487,46 +564,15 @@ def main() -> int:
     )
 
     if args.compact:
-        compact = []
-        for item in results["items"]:
-            compact.append(
-                {
-                    k: item[k]
-                    for k in ["title", "source_name", "link", "published", "summary"]
-                    if k in item
-                }
-            )
-        results["items"] = compact
+        _compact_items(results)
 
     output = json.dumps(results, ensure_ascii=False, indent=2)
 
     # Write log entry if --log specified
     if args.log:
-        log_entry = {
-            "fetched_at": results["fetched_at"],
-            "sources_successful": results["sources_successful"],
-            "sources_failed": results["sources_failed"],
-            "total_items": results["total_items"],
-            "failed_ids": [e["id"] for e in results.get("errors", [])],
-        }
-        args.log.parent.mkdir(parents=True, exist_ok=True)
-        with open(args.log, "a") as f:
-            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        _append_fetch_log(args.log, results)
 
-    if args.output:
-        args.output.write_text(output, encoding="utf-8")
-        error_count = len(results["errors"])
-        skipped_count = len(results["skipped"])
-        print(
-            f"Fetched {results['total_items']} items from "
-            f"{results['sources_successful']} sources → {args.output}"
-        )
-        if error_count:
-            print(f"  {error_count} source(s) failed (see errors in JSON)")
-        if skipped_count:
-            print(f"  {skipped_count} source(s) skipped (official_page/api)")
-    else:
-        print(output)
+    _emit_results(args, results, output)
 
     return 0
 
