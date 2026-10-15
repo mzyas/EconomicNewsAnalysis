@@ -8,7 +8,7 @@ description: >
   热点速览 等板块) → himalaya 邮件投递。亦支持纯确定性市场趋势表(trend mode)。
 runtime:
   language: python
-  entrypoint: tools/runtime.py
+  entrypoint: tools.runtime
 defaults:
   mode: briefing
   output_language: zh-CN

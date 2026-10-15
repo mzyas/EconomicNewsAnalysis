@@ -2,9 +2,9 @@
 """Render a markdown briefing as himalaya MML.
 
 Usage:
-    python tools/email_render.py briefing.md --from a@example.com \
+    python -m tools.email_render briefing.md --from a@example.com \
       --to b@example.com --subject "财经消息 日报"
-    python tools/email_render.py briefing.md -o out.mml --from a@example.com \
+    python -m tools.email_render briefing.md -o out.mml --from a@example.com \
       --to b@example.com --subject "财经消息 日报"
 """
 

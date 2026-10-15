@@ -53,7 +53,7 @@ class ConfigLoaderTests(unittest.TestCase):
         # Version no longer lives in skill.yaml (single source = pyproject.toml).
         self.assertNotIn("version", skill)
         self.assertEqual(skill["name"], "EconomicNewsAnalysis")
-        self.assertEqual(skill["runtime"]["entrypoint"], "tools/runtime.py")
+        self.assertEqual(skill["runtime"]["entrypoint"], "tools.runtime")
 
     def test_env_file_loads_without_overwriting_existing_environment(self):
         with tempfile.TemporaryDirectory() as temp_dir:

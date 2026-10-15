@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Apply validated, source-safe structured enrichment to Runtime results."""
 
 from __future__ import annotations
@@ -9,9 +8,6 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
-
-if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tools.briefing_builder import build_daily_briefing, build_daily_briefing_html
 from tools.config_loader import ROOT

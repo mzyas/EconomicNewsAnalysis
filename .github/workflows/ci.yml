@@ -32,7 +32,7 @@ jobs:
       # secrets are needed. A non-zero exit fails the job; --alert-on-fail also
       # records the failure to logs/ (uploaded below).
       - name: Workflow smoke test (offline)
-        run: uv run python tools/workflow_smoke.py --alert-on-fail
+        run: uv run python -m tools.workflow_smoke --alert-on-fail
 
       - name: Upload logs on failure
         if: failure()

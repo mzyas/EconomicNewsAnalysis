@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Workflow smoke-test harness with failure logging.
 
 Runs every workflow declared in ``workflows.yaml`` through its example config
@@ -15,9 +14,9 @@ disabled in both modes so the smoke test never delivers mail.
 
 Usage::
 
-    uv run python tools/workflow_smoke.py            # offline, all workflows
-    uv run python tools/workflow_smoke.py --live      # real fetch + LLM
-    uv run python tools/workflow_smoke.py --only daily-email-briefing
+    uv run python -m tools.workflow_smoke            # offline, all workflows
+    uv run python -m tools.workflow_smoke --live      # real fetch + LLM
+    uv run python -m tools.workflow_smoke --only daily-email-briefing
 """
 
 from __future__ import annotations
@@ -31,9 +30,6 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tools.alerting import send_failure_alert
 from tools.config_loader import ROOT, _load_mapping, load_runtime_config

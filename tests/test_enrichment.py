@@ -78,7 +78,8 @@ class EnrichmentTests(unittest.TestCase):
             completed = subprocess.run(
                 [
                     sys.executable,
-                    str(ROOT / "tools" / "enrichment.py"),
+                    "-m",
+                    "tools.enrichment",
                     "--input",
                     str(input_path),
                     "--translations",
@@ -88,6 +89,7 @@ class EnrichmentTests(unittest.TestCase):
                     "--markdown-output",
                     str(markdown_path),
                 ],
+                cwd=ROOT,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
