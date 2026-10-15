@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import subprocess
 import tempfile
 from collections.abc import Sequence
@@ -10,6 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from .email_render import build_mml
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -120,6 +123,7 @@ def send_email(
         send_mml(mml_path, email_config)
         sent = True
     except Exception as exc:
+        logger.exception("email delivery failed")
         error = str(exc)
     finally:
         if temporary:

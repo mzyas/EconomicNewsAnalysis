@@ -202,7 +202,7 @@ class ResearchAdapter:
                 if parsed_retry and parsed_retry.get("signals"):
                     parsed, raw = parsed_retry, raw_retry
             except Exception:
-                logger.warning("research analyze retry failed title=%s", title)
+                logger.warning("research analyze retry failed title=%s", title, exc_info=True)
 
         parsed = parsed or {}
         analysis_text = parsed.get("analysis") or raw

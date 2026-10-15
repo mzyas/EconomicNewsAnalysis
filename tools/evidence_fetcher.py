@@ -118,7 +118,7 @@ def fetch_evidence(url: str, timeout: int = REQUEST_TIMEOUT) -> dict[str, Any]:
         try:
             response.close()
         except Exception:
-            pass
+            logger.debug("closing the response failed url=%s", url, exc_info=True)
 
 
 def batch_fetch(

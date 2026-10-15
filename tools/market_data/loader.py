@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,8 @@ from ..config_loader import ROOT
 from ..schema_validation import validate_file
 from .models import MarketDataResult, MarketSymbol
 from .registry import get_market_data_provider
+
+logger = logging.getLogger(__name__)
 
 
 def _load_mapping(path: Path) -> dict[str, Any]:
@@ -98,12 +101,14 @@ def build_market_context(config: dict[str, Any]) -> dict[str, Any]:
                         known.add(item["id"])
                         symbols.append(_market_symbol_from_mapping(item))
             except Exception as exc:
+                logger.warning("watchlist config error path=%s", watchlist_path, exc_info=True)
                 watchlist_errors.append(
                     {"type": "WatchlistConfigError", "message": f"{watchlist_path}: {exc}"}
                 )
         provider = get_market_data_provider(provider_name)
         snapshots = provider.fetch_snapshots(symbols, period, interval)
     except Exception as exc:
+        logger.exception("market data fetch failed provider=%s", provider_name)
         return MarketDataResult(
             enabled=True,
             provider=provider_name or None,
