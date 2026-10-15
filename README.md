@@ -30,10 +30,12 @@ Each mode maps to an entry in [`workflows.yaml`](workflows.yaml) with an example
 ## Setup & run
 
 ```bash
-uv sync --group dev                                   # install (incl. pytest)
+uv sync --group dev                                   # install (incl. pytest and ruff)
 uv run python -m tools.runtime --config examples/daily_briefing.yaml
 uv run python -m tools.runtime --config examples/single_article.yaml --format markdown
 ```
+
+Python 3.12 is pinned in `.python-version` (the project supports >= 3.10).
 
 Run the tools as modules (`python -m tools.<name>`) **from the repository root**. They are not
 run by file path (`python tools/runtime.py` no longer works) and the project is not installed, so
@@ -98,7 +100,9 @@ Email is sent through [himalaya](https://github.com/pimalaya/himalaya), which is
 configured under **WSL (target Hermes profile)** — native Windows cannot send. Before a real send,
 follow the `preflight_checklist` in
 [`references/daily_email_agent_workflow.yaml`](references/daily_email_agent_workflow.yaml). With
-`email.send: false` the pipeline still renders the `.mml` / preview HTML for inspection.
+`email.send: false` delivery is skipped: no message is built or sent, and the briefing Markdown is
+still written to `output_dir`. To look at a rendered email without sending it, run
+`python -m tools.email_render` on a briefing Markdown file.
 For the native Hermes tool, scheduled delivery is selected only with:
 
 ```json
@@ -115,6 +119,7 @@ controlled Hermes environment before enabling real delivery.
 
 ```bash
 uv run python -m pytest                               # unit + integration suite
+uv run ruff check . && uv run ruff format --check .   # lint and formatting (both run in CI)
 uv run python -m tools.workflow_smoke                 # offline smoke of every workflow
 uv run python -m tools.workflow_smoke --only daily-email-briefing --alert-on-fail
 ```
@@ -125,7 +130,7 @@ fetch/market/email so it's deterministic and free. It exits `1` if any workflow 
 scheduler or CI step can gate on it. With `--alert-on-fail`, failures are also recorded to
 `logs/alerts.jsonl` and forwarded to the command in the `ECON_NEWS_ALERT_CMD` env var (the
 one-line summary is passed on stdin and as a trailing argument) — wire it to a himalaya send,
-a webhook `curl`, or a desktop notifier. CI (`.github/workflows/ci.yml`) runs pytest + the
+a webhook `curl`, or a desktop notifier. CI (`.github/workflows/ci.yml`) runs ruff, pytest and the
 offline smoke on every push.
 
 ## Key config knobs (`graph` block)
@@ -134,6 +139,9 @@ offline smoke on every push.
 - `research_max_items`, `llm_concurrency` — how many items get LLM analysis, and concurrency.
 - `checkpoint_path`, `checkpoint_keep_last` — SQLite checkpoint location and retention (only
   the newest N run threads are kept; older ones are pruned after each run).
+- `daily_time_budget_seconds` (a top-level key, not in `graph`; default 900) — per-run time
+  budget. When the final reserve (10% of the budget, at most 60 s) is reached, the optional stages
+  are skipped, the briefing is marked as budget-degraded and the result carries a `run_summary`.
 - Per-section quotas (`official_max_items` / `media_max_items` / `tech_max_items` /
   `google_max_items` / `hot_max_items` / `movers_max_items`) plus `max_ranked_items`.
 - `country_balance` — per-country cap on the official/media boards (default
