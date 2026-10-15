@@ -8,19 +8,21 @@
 
 ```
 EconomicNewsAnalysis  v0.1.0
-├── tools/              → 38 个源文件（含 graph/ 子包 + trend_table.py）
-├── tests/              → 18 个测试文件
-├── schemas/            → 7 个 JSON Schema
-├── references/         → 7 个文档
-├── sources/            → 2 个源配置（RSS + 市场数据，16 个市场资产）
-├── examples/           → 11 个示例配置
-├── skill.yaml          → 技能入口配置（版本、默认参数）
-├── workflows.yaml      → 用户工作流注册
-├── pyproject.toml      → Python 项目元数据
+├── tools/              → 55 个 Python 文件（含 graph/ 与 graph/nodes/ 子包、market_data/ 子包）
+├── tests/              → 27 个测试文件
+├── schemas/            → 8 个 JSON Schema
+├── references/         → 7 个文档（6 个 Markdown + 1 个邮件 workflow 指南）
+├── sources/            → 3 个源配置（RSS；市场数据，16 个资产；个股 watchlist）
+├── examples/           → 10 个示例（6 个配置 + 4 个 JSON 样例）
+├── skill.yaml          → 技能入口配置（默认参数；版本号取自 pyproject.toml）
+├── workflows.yaml      → 工作流注册（6 个）
+├── daily_email_briefing.yaml → 邮件投递模板（插件按固定名读取，不含个人信息）
+├── plugin.yaml, __init__.py  → Hermes 原生插件（工具 run_langgraph_workflow）
+├── pyproject.toml      → Python 项目元数据与 ruff 配置
 └── uv.lock             → 依赖锁定
 ```
 
-**功能定位**：多源经济新闻抓取 → 归一化 → LLM 分析 → 质量门控 → 简报生成 → 邮件投递的自动化管道。支持传统 Runtime 和 LangGraph 两种执行模式。v0.7.0 新增**无 LLM 独立趋势表**（`trend` mode），用于每日低成本的确定性市场数据输出。v0.8.0 新增**排序国家均衡**、**官媒宏观背景（中美日）LLM 合成**，以及 **💡 科技与AI / 🔥 热点速览板块**（详见 §5b）。v0.9.0 新增**行情异动新闻**（`movers_news` 节点，详见 §5b.4）。
+**功能定位**：多源经济新闻抓取 → 归一化 → LLM 分析 → 质量门控 → 简报生成 → 邮件投递的自动化管道，由 LangGraph 的 StateGraph 编排（`tools/runtime.py` 只是命令行入口，运行的就是这张图）。支持 7 种运行模式，其中 `trend` 是**无 LLM 的独立趋势表**，用于每日低成本的确定性市场数据输出。简报包含**排序国家均衡**、**官媒宏观背景（中美日）LLM 合成**、**💡 科技与AI / 🔥 热点速览板块**（详见 §5b）和**行情异动新闻**（`movers_news` 节点，详见 §5b.4）。每次运行有**时间预算**，超时会降级而不是中断（详见 §12.5）。
 
 ---
 
@@ -251,7 +253,7 @@ def build_workflow(checkpoint_path=None, saver=None):
 | `_after_trend_table` | `state.mode` | `trend` → write_outputs / 其他 → fetch_feeds |
 | `_after_rank` | `state.mode` | `fetch` → END / 其他 → collect_evidence |
 | `_after_analyze` | `state.mode` | `analyze` → END / 其他 → quality_gate |
-| `_should_retry_or_downgrade` | `_quality_gate.passed` + `_retry_count` | 通过 → build_briefing / 可重试 → collect_evidence / 超限 → build_briefing（降级） |
+| `_should_retry_or_downgrade` | `_run_budget.degraded` + `_quality_gate.passed` + `_retry_count` | 预算已降级 → build_briefing（降级）/ 通过 → build_briefing / 可重试 → collect_evidence / 超限 → build_briefing（降级） |
 | `_should_deliver` | `state.mode` + `config.deliver_email` | `deliver` → deliver_email / `trend`+deliver_email → deliver_email / 其他 → write_run_log |
 
 ---
@@ -261,12 +263,11 @@ def build_workflow(checkpoint_path=None, saver=None):
 **支持 7 种运行模式**：`briefing`（完整简报）、`deliver`（简报+邮件）、`analyze`（纯LLM分析）、`fetch`（仅抓取）、`check`（日志检查）、`list-sources`（列出源）、`trend`（独立趋势表，v0.7.0 新增）。
 
 ```bash
-# LangGraph 模式（默认）
+# 新运行（在项目根目录下执行）
 python -m tools.runtime --config examples/daily_briefing.yaml
-# 传统模式：无--resume，默认启动新图
 
-# 恢复模式
-python -m tools.runtime --config examples/daily_briefing.yaml --resume
+# 恢复模式（需要同一个 --run-id 的 checkpoint）
+python -m tools.runtime --config examples/daily_briefing.yaml --run-id <id> --resume
 ```
 
 ```
@@ -307,7 +308,7 @@ output_dir/
 - **Markdown** 仅在正文通过实质内容检查后写入；路径还会通过普通文件、非空和正文检查
 - **MML** 是投递内部中间文件，不属于 `output_files`，无附件邮件的临时 MML 由 `send_email()` 创建并清理
 
-运行时日志（`write_run_log_node`）写入 `config['log_path']`，默认回退到项目根目录的 `logs/runtime.jsonl`，每行为一条 JSONL 记录。`check_log_node` 通过 `evaluate_fetch_window()` 读取此日志判断当日是否已抓取，避免重复运行。
+运行时日志（`write_run_log_node`）追加写入 `config['log_path']`（`skill.yaml` 默认 `.hermes/logs/daily-workflow.jsonl`，相对插件/项目根目录解析），每行为一条 JSONL 记录；未配置 `log_path` 时不写日志。`check_log_node` 通过 `evaluate_fetch_window()` 读取同一份日志判断当日是否已抓取，避免重复运行；`log_path` 缺失时回退到项目根目录的 `logs/runtime.jsonl`。
 
 | 产出物 | 文件类型 | 触发条件 | 内容 |
 |--------|----------|----------|------|
@@ -331,19 +332,44 @@ output_dir/
 
 ---
 
-## 5. 质量门控机制 — `tools/enrichment.py`
+## 5. 质量门控机制 — `tools/graph/nodes/quality.py`
 
-`validate_email_readiness()` 是 MML 邮件生成前的最终拦截器：
+`quality_gate_node` 在生成简报前补全缺失的产物，再给出通过/不通过的结论：
 
 ```
-已核验条目 → signals 必须填写？           → 缺失则拒绝
-前5候选    → topics 必须显式确认？        → 缺失则拒绝
-market_impact → 5字段全部填写？           → 缺失则拒绝
-mainlines  → supporting_item_ids 在前5候选内？→ 越界则拒绝
-Google News → translated_title 已提供？    → 缺失则拒绝 ✅ (v0.6.0新增)
+1. 补全信号      对缺少 signals 的条目（最多 graph.enrich_max_items，默认 25 条）内联调用一次 LLM
+2. 推导兜底产物  今日资讯主线（_derive_mainlines）
+                 市场影响地图（_llm_market_impact，失败回退 _market_impact_from_items）
+                 中美日官媒宏观背景（_llm_macro_background → ResearchAdapter.macro_background）
+3. 门控检查      见下表
 ```
 
-> 注：上面是 legacy `enrichment.py` 的 `validate_email_readiness()`。在 LangGraph 链路里，`quality_gate_node`（`tools/graph/nodes/quality.py`）会在门控前**内联用一次 LLM 合成**缺失产物：核心信号（auto-enrich）、今日资讯主线（`_derive_mainlines`）、市场影响地图（`_llm_market_impact`）、以及**中美日官媒宏观背景**（`_llm_macro_background` → `ResearchAdapter.macro_background`，`MACRO_BACKGROUND_PROMPT`）。结果写入 `daily.*`，`build_briefing_node` 复用门控批准的同一份值；任一合成失败都回退到确定性版本，不阻断投递。
+| 检查 | 不满足时写入 `issues` |
+|------|----------------------|
+| 前 5 条分析都有 `signals` | `missing_signals:<id,…>` |
+| 前 5 条重要条目的标题已是中文（未核验的 Google News 发现链接除外） | `untranslated_titles:<id,…>` |
+| 主线数量在 1–5 之间 | `mainlines_invalid` |
+| 市场影响地图 5 项（`rates_bonds`、`fx`、`equities`、`commodities`、`risk_appetite`）都非空 | `market_impact_map_incomplete` |
+
+重要条目缺少已抓取的正文证据只记日志，不阻断（补全步骤可以只靠标题合成信号）。
+
+结果写入 `_quality_gate`（`passed`、`issues`、`missing_evidence`、`untranslated_titles`、`checked_at`）。
+合成产物写入 `daily.*`，`build_briefing_node` 复用门控批准的同一份值；任一合成失败都回退到确定性版本。
+
+**不通过不会阻断投递**：`_retry_count` 加 1，`_should_retry_or_downgrade` 在 `max_quality_retries`
+（`skill.yaml` 默认 1，每日邮件模板为 2）内回到 `collect_evidence` 重试；超限（或运行预算已降级，见 §12.5）
+则继续生成简报。此时 `pipeline_status` 为 `partial_success`，简报里带「部分成功」提示，邮件照常发送。
+
+> 旧版离线工具 `tools/enrichment.py`（`python -m tools.enrichment`）仍保留 `validate_email_readiness()`，
+> 用于校验外部提供的富化补丁，不在 LangGraph 链路里：
+>
+> ```
+> 已核验条目 → signals 必须填写？           → 缺失则拒绝
+> 前5候选    → topics 必须显式确认？        → 缺失则拒绝
+> market_impact → 5字段全部填写？           → 缺失则拒绝
+> mainlines  → supporting_item_ids 在前5候选内？→ 越界则拒绝
+> Google News → translated_title 已提供？    → 缺失则拒绝
+> ```
 
 ---
 
@@ -378,7 +404,7 @@ Google News → translated_title 已提供？    → 缺失则拒绝 ✅ (v0.6.0
 
 `official_max_items` / `media_max_items` / `tech_max_items`(默认6) / `google_max_items`(6) / `hot_max_items`(5) / `movers_max_items`(6)；schema 见 `runtime_input.schema.json`。
 
-### 5b.4 行情异动新闻（`tools/movers.py`，v0.9.0）
+### 5b.4 行情异动新闻（`tools/movers.py`）
 
 趋势表只说明「涨跌了」，不解释原因；宏观 RSS 也覆盖不到个股事件。`movers_news` 把行情和新闻接起来：
 
@@ -399,7 +425,7 @@ fetch_market_data → trend_table → fetch_feeds → movers_news → google_new
 
 ---
 
-## 6. 超时策略 — connect/read timeout 拆分 (v0.6.0)
+## 6. 超时策略 — connect/read timeout 拆分
 
 | 参数 | 默认值 | 作用域 |
 |------|--------|--------|
@@ -438,7 +464,7 @@ with urllib.request.urlopen(req, timeout=connect_timeout) as resp:
 配置管理，不属于本 skill 的 `skill.yaml`。
 
 ---
-## 8. 独立趋势表 — `tools/trend_table.py`（v0.7.0）
+## 8. 独立趋势表 — `tools/trend_table.py`
 
 ### 8.1 设计目标
 
@@ -469,7 +495,7 @@ with urllib.request.urlopen(req, timeout=connect_timeout) as resp:
 
 ### 8.4 市场源配置 — `sources/market_sources.yaml`
 
-v0.7.0 从 4 个资产扩展至 12 个资产，涵盖 6 个类别：
+共 16 个资产，涵盖 6 个类别：
 
 | 类别 | 资产 | Yahoo Ticker |
 |------|------|-------------|
@@ -502,13 +528,15 @@ fetch_market_data → _after_market_data → trend_table → _after_trend_table
 
 | 依赖 | 用途 |
 |------|------|
-| `langgraph` | StateGraph 框架 |
-| Hermes `ctx.llm` facade | 托管 provider/model 路由与调用 |
-| `yfinance` | 市场数据源 |
-| `requests` / `urllib` | HTTP 抓取 |
+| `langgraph`, `langgraph-checkpoint-sqlite` | StateGraph 框架与 SQLite checkpoint |
+| Hermes `ctx.llm` facade | 托管 provider/model 路由与调用（由 Hermes 提供，不在 `pyproject.toml` 里） |
+| `yfinance`, `pandas` | 市场数据源与时间序列处理 |
+| `requests` | 证据正文抓取 |
+| `urllib`（标准库） | RSS / World Bank API 抓取 |
 | `beautifulsoup4` | HTML 解析 |
 | `PyYAML` | 配置加载 |
-| `curl-cffi` | 高级 HTTP 客户端（证据收集） |
+| `typing-extensions` | Python < 3.11 的类型标注兼容 |
+| `pytest`, `ruff`（开发组） | 测试，以及 lint 与格式化 |
 
 ---
 
@@ -521,14 +549,14 @@ fetch_market_data → _after_market_data → trend_table → _after_trend_table
 | **Google News 解析** | `google_news_enrichment.py` | urllib, html.parser |
 | **归一化/排序** | `normalizer.py`, `relevance_ranker.py` | — |
 | **LLM 分析** | `graph/research.py`, `graph/prompts.py`, `hermes_plugin.py` | Hermes `ctx.llm` |
-| **证据收集** | `evidence_fetcher.py` | requests, curl-cffi |
+| **证据收集** | `evidence_fetcher.py` | requests, beautifulsoup4 |
 | **简报渲染** | `briefing_builder.py`, `markdown_writer.py` | — |
 | **趋势表渲染** | `trend_table.py` | —（纯 Python，无外部依赖） |
 | **邮件投递** | `email_render.py`, `email_delivery.py` | himalaya CLI |
 | **市场数据** | `market_data/` | yfinance |
-| **质量门控** | `enrichment.py` | — |
+| **质量门控** | `graph/nodes/quality.py`（旧版离线补丁工具：`enrichment.py`） | — |
 | **运行日志** | `run_log.py` | JSONL |
-| **Graph Harness** | `graph/` (8 files) | langgraph |
+| **Graph Harness** | `graph/`：`workflow.py`、`state.py`、`nodes/` 包、`research.py`、`prompts.py`、`checkpoint.py`、`run_budget.py` 等 | langgraph |
 
 ---
 
@@ -577,7 +605,7 @@ graph.invoke(state)         ← 图执行（16个节点，条件路由）
 _state → _project_to_old_schema() → JSON stdout
 ```
 
-### 11.2 趋势表链路（trend mode — v0.7.0 新增）
+### 11.2 趋势表链路（trend mode）
 
 ```
 用户输入（mode: trend）
@@ -655,7 +683,7 @@ graph:
   checkpoint_path: ".hermes/graph_checkpoints"  # 相对项目根目录
 ```
 
-每个运行对应一个 `thread_id = run_id`，同一 `run_id` 多次执行会累积多个 checkpoint 版本。
+每个运行对应一个 `thread_id = run_id`，同一 `run_id` 多次执行会累积多个 checkpoint 版本。每次运行结束后只保留最近 `graph.checkpoint_keep_last`（默认 20）个线程，更早的由 `prune_checkpoints()` 清理，避免 SQLite 文件无限增长；清理失败只记日志，不影响本次运行。
 
 ### 12.3 恢复流程
 
@@ -672,11 +700,11 @@ if resume and run_id and checkpoint_path:
 ```
 
 ```bash
-# 新运行
-python -m tools.runtime --config examples/daily_briefing.yaml
+# 新运行（指定 run_id，便于之后恢复）
+python -m tools.runtime --config examples/daily_briefing.yaml --run-id my-run
 
-# 恢复上次运行（相同 run_id）
-python -m tools.runtime --config examples/daily_briefing.yaml --resume
+# 恢复上次运行（--resume 必须配相同的 --run-id）
+python -m tools.runtime --config examples/daily_briefing.yaml --run-id my-run --resume
 ```
 
 ### 12.4 关键约束
@@ -688,6 +716,21 @@ python -m tools.runtime --config examples/daily_briefing.yaml --resume
 | **连接生命周期** | `SqliteSaver` 连接在 `run_workflow()` 返回前由 `_close_saver()` 关闭 |
 | **幂等节点** | 同一状态重入时检查 `delivery.email_sent`；跨进程仅在相同 `run_id`、checkpoint 路径和 `resume=True` 时保证恢复后不重发 |
 | **不跨越 mode** | 恢复时 mode 被覆盖，不会从 briefing checkpoint 恢复成 fetch |
+
+### 12.5 运行时间预算 — `tools/graph/run_budget.py`
+
+每次运行有一个时间预算，超时只会降级，不会中断：
+
+- 配置 `daily_time_budget_seconds`（默认 900 秒，由 `config_loader` 设定）；预留
+  `reserve = min(60, 预算的 10%)` 秒用于收尾。
+- 四个可选阶段带预算检查并记录检查点：`rss`（`fetch_feeds`）、`evidence`、`analysis`、`quality`。
+  进入收尾预留期（剩余时间不足 `reserve`）后，这些阶段被跳过，并记 `Budget downgrade` 警告。
+- 触发后 `degraded: true`，`degradation_reason` 为 `finalization_reserve`（进入预留期）或
+  `budget_exhausted`（已耗尽），并记录 `blocked_stage` / `blocked_item`。
+- 降级后：质量门直接给出 `budget_limited`，`_should_retry_or_downgrade` 路由到降级，
+  简报开头加「Budget-degraded briefing」提示，`write_run_log` 追加一条 `stage_checkpoint_summary`。
+- 结果 JSON 带 `run_summary`（`total_seconds`、`reserve_seconds`、`remaining_seconds`、`degraded`、
+  `degradation_reason`、`blocked_stage`、`blocked_item`、`checkpoints`），见 `runtime_result.schema.json`。
 
 ---
 
@@ -701,71 +744,76 @@ python -m tools.runtime --config examples/daily_briefing.yaml --resume
 
 ```yaml
 name: EconomicNewsAnalysis
-version: 0.8.0
+# 版本号唯一来源是 pyproject.toml，运行时由 tools/_version.py 注入，这里不单独维护
 runtime:
   language: python
-  entrypoint: tools.runtime
+  entrypoint: tools.runtime        # 模块名，用 python -m 运行
 defaults:
   mode: briefing
   output_language: zh-CN
   source_config: sources/rss_sources.yaml
+  connect_timeout: 10
+  read_timeout: 40
+  log_path: .hermes/logs/daily-workflow.jsonl
   market_data:
     enabled: false
     provider: yfinance
     source_config: sources/market_sources.yaml
     period: 5d
+    interval: 1d
+  deliver_email: false
   graph:
     temperature: 0.2
     evidence_enabled: true
     checkpoint_path: ".hermes/graph_checkpoints"
+    checkpoint_keep_last: 20
     max_quality_retries: 1
+    research_max_items: 5
+    country_balance: {CN: 4, US: 4, JP: 4, default: 99}
 ```
 
 ### 13.2 workflows.yaml — 工作流注册
 
-Hermes 通过 `workflows.yaml` 发现可运行的工作流，每个工作流注册一种 `mode`：
+`workflows.yaml` 注册 6 个工作流，每个对应一种 `mode` 和一份示例配置（`example_config`）；
+`python -m tools.workflow_smoke` 用这些示例配置对每个工作流做冒烟测试：
 
 ```yaml
 workflows:
   daily-briefing:
     mode: briefing
     activation: manual
-    description: 生成每日重点新闻简报，仅保存为本地文件
+    example_config: examples/daily_briefing.yaml
 
   daily-email-briefing:
     mode: deliver
     activation: scheduled_or_manual
-    description: 生成每日重点新闻简报，并通过 Email 发送
+    example_config: daily_email_briefing.yaml     # 仓库根目录的投递模板
 
   daily-trend:
     mode: trend
     activation: scheduled_or_manual
-    description: 生成每日市场趋势表（不调用 RSS/LLM，纯确定性市场数据）
+    example_config: examples/daily_trend.yaml
+
+  # 另有 news-analysis (analyze)、fetch-only (fetch)、source-check (check)
 ```
 
-### 13.3 每日自动化 — Cronjob
+### 13.3 每日自动化 — Hermes Cron
 
-在 Hermes 中通过 `hermes cron create` 注册定时任务，典型示例：
+定时投递通过原生插件工具完成（部署步骤见 `docs/HERMES-FIRST-INSTALL.md`，设计见
+`docs/daily-email-profile-config-design.md`）：Cron 主 Agent 调用 `run_langgraph_workflow`，
+参数是一个封闭枚举，不接受路径、收件人或发送开关：
 
-```bash
-# 每日 JST 9:30 生成趋势表
-hermes cron create \
-  --schedule "30 0 * * *" \
-  --skill EconomicNewsAnalysis \
-  --config examples/daily_trend.yaml
-
-# 每日 JST 10:00 生成完整简报（含邮件投递）
-hermes cron create \
-  --schedule "0 1 * * *" \
-  --skill EconomicNewsAnalysis \
-  --config examples/daily_email_briefing.yaml
+```json
+{"run_mode": "deliver", "profile_config": "daily_email"}
 ```
 
-cron 运行时，Hermes 会：
-1. 加载 `skill.yaml` 的 defaults
-2. 合并 `--config` 的运行时配置（深度合并）
-3. 调用 `python -m tools.runtime --config <merged_config>`
-4. 将 stdout 的 JSON 结果交付到目标通道
+- `profile_config: daily_email` 在插件内部映射到仓库根目录的 `daily_email_briefing.yaml`
+  （原先的 `examples/daily_email_briefing.yaml` 已有意删除，只保留这一份规范模板）。
+- 仓库里的模板不含个人信息且 `email.send: false`；真实收件人与 `send: true` 只在受控的部署副本里补齐。
+- `run_mode: deliver` 必须带 `profile_config: daily_email`；其余模式保持手动传入文本的行为，不加载每日配置。
+- 模型由 Cron 主 Agent 决定，节点级路由见 §7。
+- 命令行入口 `python -m tools.runtime` 仍可用于本地运行；Agent 编排方式见
+  `references/daily_email_agent_workflow.yaml`。命令行里没有 Hermes 的 `ctx.llm`，LLM 步骤会失败并走降级。
 
 ### 13.4 邮件投递 — Himalaya CLI
 
@@ -798,15 +846,15 @@ cron 运行时，Hermes 会：
 `email_render.py` 的 `build_combined_email_html()` 函数构建邮件 HTML 正文，结构如下：
 
 ```
-┌─ Header ──── 深色渐变 + 金色标题 + JST 日期
-├─ 趋势表 ──── 16 个资产，英文名在上中文名在下，单位前置
-├─ 简报区 ──── 条件区域，有新闻且非重复时才显示。板块顺序：
+┌─ 趋势表 ──── 16 个资产（个股不入表），英文名在上中文名在下，单位前置；表尾标注「数据截至」
+├─ 简报区 ──── 条件区域（📰 今日重点新闻），有新闻且非重复时才显示。板块顺序：
 │              今日资讯主线 → 📉 异动解读（条件）→ 🌏 官媒宏观背景（中美日）→ 🌐 财经媒体 →
 │              💡 科技与AI → 🔍 Google News 快讯 → 🔥 热点速览 → 市场影响地图 …
-└─ Footer ──── Economic News Analysis v{version}
+└─ 页脚 ────── 由 Economic News Analysis v{version} 自动生成
 ```
 
-**质量门控**：`trend` mode 绕过质量门控直接发邮件；`briefing`/`deliver` mode 仍需要质量门通过。
+**质量门控**：`trend` mode 不经过质量门；`briefing`/`deliver` mode 经过质量门，不通过时先重试、超限后降级
+继续——**不会阻断投递**，`pipeline_status` 记为 `partial_success`，简报里带「部分成功」提示（见 §5）。
 
 **去重逻辑**：`write_run_log_node` 将本次新闻条目的 URL 列表写入 `item_urls` 字段。下次运行时对比，若全部重复则跳过简报区，仅发趋势表。
 
@@ -822,6 +870,6 @@ cron 运行时，Hermes 会：
 | **LangGraph** | LangChain StateGraph | 本项目的图执行引擎，管理节点拓扑和状态流转 |
 | **StateGraph** | 状态图 | LangGraph 的核心抽象，节点 + 条件路由 + 状态 TypedDict |
 | **Checkpoint** | 检查点 | SqliteSaver 对图状态的快照，支持运行恢复 |
-| **Quality Gate** | 质量门控 | `enrichment.py` 的 LLM 输出校验器，确保邮件质量 |
-| **Trend Mode** | 趋势表模式 | v0.7.0 新增，不调用 RSS/LLM 的纯市场数据输出模式 |
+| **Quality Gate** | 质量门控 | `graph/nodes/quality.py`：先补全缺失的信号、主线、市场影响地图，仍不合格则重试或降级（见 §5） |
+| **Trend Mode** | 趋势表模式 | 不调用 RSS/LLM 的纯市场数据输出模式 |
 | **Yahoo Ticker** | — | yfinance 识别的资产标识符（如 `^GSPC` 对应 S&P 500） |
