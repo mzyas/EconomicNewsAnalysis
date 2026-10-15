@@ -8,14 +8,15 @@ failure is diagnosable after the fact instead of vanishing to stderr.
 
 By default it runs **offline**: RSS fetch, market data and email sending are
 disabled and the LLM is stubbed, so the run is fast, deterministic and free of
-network / API cost. Pass ``--live`` to exercise the real fetch + LLM (Windows
-Credential Manager ``deepseek-key``) + market-data path; email sending stays
-disabled in both modes so the smoke test never delivers mail.
+network / API cost. Pass ``--live`` to exercise the real fetch + market-data path;
+the LLM steps need Hermes' ``ctx.llm``, which the command line does not have, so
+they fail and the run degrades. Email sending stays disabled in both modes so the
+smoke test never delivers mail.
 
 Usage::
 
     uv run python -m tools.workflow_smoke            # offline, all workflows
-    uv run python -m tools.workflow_smoke --live      # real fetch + LLM
+    uv run python -m tools.workflow_smoke --live      # real fetch + market data (no LLM from the CLI)
     uv run python -m tools.workflow_smoke --only daily-email-briefing
 """
 
@@ -140,7 +141,7 @@ def _offline_config(config: dict[str, Any], mode: str, output_dir: str) -> dict[
 
 
 def _live_config(config: dict[str, Any], output_dir: str) -> dict[str, Any]:
-    """Real fetch + LLM + market data, but never actually send email."""
+    """Real fetch + market data (the LLM needs Hermes ctx.llm), never send email."""
     config = dict(config)
     config["output_dir"] = output_dir
     email = dict(config.get("email") or {})
@@ -205,7 +206,9 @@ def run_one(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Workflow smoke-test harness")
     parser.add_argument(
-        "--live", action="store_true", help="Real fetch + LLM + market data (email still disabled)"
+        "--live",
+        action="store_true",
+        help="Real fetch + market data; the LLM needs Hermes ctx.llm (email still disabled)",
     )
     parser.add_argument(
         "--only",
