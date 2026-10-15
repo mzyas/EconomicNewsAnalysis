@@ -812,8 +812,8 @@ workflows:
 - 仓库里的模板不含个人信息且 `email.send: false`；真实收件人与 `send: true` 只在受控的部署副本里补齐。
 - `run_mode: deliver` 必须带 `profile_config: daily_email`；其余模式保持手动传入文本的行为，不加载每日配置。
 - 模型由 Cron 主 Agent 决定，节点级路由见 §7。
-- 命令行入口 `python -m tools.runtime` 仍可用于本地运行；Agent 编排方式见
-  `references/daily_email_agent_workflow.yaml`。命令行里没有 Hermes 的 `ctx.llm`，LLM 步骤会失败并走降级。
+- 命令行入口 `python -m tools.runtime` 仍可用于本地运行，但命令行里没有 Hermes 的 `ctx.llm`，
+  LLM 步骤会失败并走降级。每日邮件的编排和真发前检查见 `references/daily_email_agent_workflow.yaml`。
 
 ### 13.4 邮件投递 — Himalaya CLI
 
