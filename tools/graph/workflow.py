@@ -129,24 +129,8 @@ def _should_deliver(state: dict[str, Any]) -> str:
 # ── Graph assembly ─────────────────────────────────────────────────────────
 
 
-def build_workflow(
-    checkpoint_path: str | None = None,
-    saver: Any | None = None,
-) -> Any:
-    """Build the compiled LangGraph workflow.
-
-    Args:
-        checkpoint_path: Optional path to a SQLite checkpoint database.
-        saver: Optional pre-built ``SqliteSaver`` instance. When supplied
-            the caller is responsible for its lifecycle. When only
-            ``checkpoint_path`` is set, a fresh saver is created here
-            and stored on the graph so ``run_workflow`` can close it.
-
-    Returns:
-        A compiled LangGraph graph exposing ``invoke`` / ``stream``.
-    """
-    workflow = StateGraph(NewsAnalysisState)
-
+def _add_nodes(workflow: Any) -> None:
+    """Register every node on the graph."""
     workflow.add_node("load_config", load_config_node)
     workflow.add_node("fetch_market_data", fetch_market_data_node)
     workflow.add_node("fetch_feeds", fetch_feeds_node)
@@ -164,6 +148,9 @@ def build_workflow(
     workflow.add_node("list_sources", list_sources_node)
     workflow.add_node("trend_table", trend_table_node)
 
+
+def _add_edges(workflow: Any) -> None:
+    """Wire the entry point, the conditional routing and the terminal edges."""
     workflow.set_entry_point("load_config")
     workflow.add_conditional_edges(
         "load_config",
@@ -235,6 +222,27 @@ def build_workflow(
     workflow.add_edge("write_run_log", END)
     workflow.add_edge("check_log", END)
     workflow.add_edge("list_sources", END)
+
+
+def build_workflow(
+    checkpoint_path: str | None = None,
+    saver: Any | None = None,
+) -> Any:
+    """Build the compiled LangGraph workflow.
+
+    Args:
+        checkpoint_path: Optional path to a SQLite checkpoint database.
+        saver: Optional pre-built ``SqliteSaver`` instance. When supplied
+            the caller is responsible for its lifecycle. When only
+            ``checkpoint_path`` is set, a fresh saver is created here
+            and stored on the graph so ``run_workflow`` can close it.
+
+    Returns:
+        A compiled LangGraph graph exposing ``invoke`` / ``stream``.
+    """
+    workflow = StateGraph(NewsAnalysisState)
+    _add_nodes(workflow)
+    _add_edges(workflow)
 
     owns_saver = False
     if saver is None and checkpoint_path:
