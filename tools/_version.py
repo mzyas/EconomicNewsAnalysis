@@ -15,8 +15,7 @@ Resolution order:
 from __future__ import annotations
 
 import re
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _dist_version
+from importlib.metadata import PackageNotFoundError, version as _dist_version
 from pathlib import Path
 
 _DIST_NAME = "EconomicNewsAnalysis"

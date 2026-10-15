@@ -1466,11 +1466,7 @@ __all__ = [
 # receive deadline-aware behavior without changing the underlying adapters.
 from .run_budget import (
     begin_stage as _budget_begin,
-)
-from .run_budget import (
     complete_stage as _budget_complete,
-)
-from .run_budget import (
     should_stop_optional_work as _budget_stop,
 )
 

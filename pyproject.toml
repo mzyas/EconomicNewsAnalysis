@@ -51,3 +51,6 @@ ignore = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
