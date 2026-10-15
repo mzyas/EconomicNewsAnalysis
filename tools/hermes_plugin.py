@@ -1,9 +1,9 @@
 """Hermes plugin boundary for the LangGraph economic-news workflow."""
 
 from __future__ import annotations
+
 import logging
 import shutil
-
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -11,7 +11,6 @@ from typing import Any
 from .config_loader import ROOT, load_runtime_config
 from .delivery_trace import effective_delivery_config
 from .graph.workflow import run_workflow
-
 
 logger = logging.getLogger(__name__)
 

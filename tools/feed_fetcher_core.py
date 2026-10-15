@@ -21,16 +21,14 @@ import hashlib
 import json
 import sys
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone, timedelta
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 import yaml
-
 
 # ── data model ──────────────────────────────────────────────────────────────
 

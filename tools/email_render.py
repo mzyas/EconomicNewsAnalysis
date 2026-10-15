@@ -12,9 +12,8 @@ import argparse
 import html
 import re
 import sys
-from pathlib import Path
 from collections.abc import Sequence
-
+from pathlib import Path
 
 NEWS_TABLE_HEADER = ["重要性", "地区", "主题", "新闻内容", "核心信号", "关注资产"]
 
@@ -315,7 +314,7 @@ def build_combined_email_html(
     version: str = "",
     report_date: str | None = None,
 ) -> str:
-    from .trend_table import _direction_color, _fmt_price, _fmt_change
+    from .trend_table import _direction_color, _fmt_change, _fmt_price
 
     """Build a full email-ready HTML body that combines trend table + optional briefing.
 

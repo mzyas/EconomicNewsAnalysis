@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-
 _VALID_STATUSES = {"entered", "completed", "failed", "skipped"}
 
 

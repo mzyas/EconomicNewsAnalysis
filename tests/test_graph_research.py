@@ -5,12 +5,12 @@ import os
 import unittest
 from unittest.mock import MagicMock
 
-from tools.graph.research import ResearchAdapter
 from tools.graph.prompts import (
-    RESEARCH_PROMPT,
     ANALYSIS_PROMPT,
     QUALITY_GATE_PROMPT,
+    RESEARCH_PROMPT,
 )
+from tools.graph.research import ResearchAdapter
 
 
 class PromptTemplateTests(unittest.TestCase):
@@ -279,7 +279,6 @@ class ResearchAdapterQualityCheckTests(unittest.TestCase):
 
 class ResearchAdapterEnvironmentTests(unittest.TestCase):
     def test_analyze_returns_structured_error_when_no_fake_and_no_api_key(self):
-        import os
 
         adapter = ResearchAdapter()
         adapter._fake_llm = None

@@ -11,7 +11,6 @@ from unittest import TestCase, mock
 
 from tools._version import __version__ as PKG_VERSION
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 

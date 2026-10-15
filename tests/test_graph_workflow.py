@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from tools.config_loader import ROOT, load_runtime_config
+from tools.config_loader import ROOT
 from tools.graph.nodes import (
     _has_valid_html,
     _has_valid_markdown,
@@ -30,7 +30,6 @@ from tools.graph.nodes import (
     write_outputs_node,
     write_run_log_node,
 )
-from tools.graph.research import ResearchAdapter
 from tools.graph.state import initial_state
 from tools.graph.workflow import (
     _should_deliver,

@@ -5,7 +5,6 @@ from __future__ import annotations
 from .base import MarketDataProvider
 from .providers.yfinance_provider import YFinanceProvider
 
-
 _PROVIDERS: dict[str, type[MarketDataProvider]] = {
     YFinanceProvider.name: YFinanceProvider,
 }

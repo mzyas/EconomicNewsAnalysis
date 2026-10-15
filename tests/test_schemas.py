@@ -1,6 +1,5 @@
 import json
 import unittest
-from pathlib import Path
 
 from tools.config_loader import ROOT, load_runtime_config
 from tools.runtime import execute

@@ -1,14 +1,14 @@
 import unittest
 
 from tools.email_render import (
+    _strip_trend_section,
+    _trim_news_cell,
+    _truncate_signal,
     build_combined_email_html,
     inline_format,
     md_to_html,
     md_to_plain,
     slim_news_tables,
-    _strip_trend_section,
-    _trim_news_cell,
-    _truncate_signal,
 )
 
 TREND_ROWS = [

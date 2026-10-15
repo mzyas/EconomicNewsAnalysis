@@ -6,12 +6,12 @@ import json
 import unittest
 from types import SimpleNamespace
 
+from tools.config_loader import ROOT, load_runtime_config
 from tools.graph.research import ResearchAdapter
 from tools.graph.state import initial_state
 from tools.graph.workflow import _project_result
-from tools.schema_validation import validate_file
-from tools.config_loader import ROOT, load_runtime_config
 from tools.hermes_plugin import run_langgraph_workflow
+from tools.schema_validation import validate_file
 
 
 class _HermesLLM:

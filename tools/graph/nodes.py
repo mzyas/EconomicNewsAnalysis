@@ -9,8 +9,8 @@ rest of the pipeline.
 
 from __future__ import annotations
 
-import logging
 import html as html_lib
+import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -18,27 +18,24 @@ from pathlib import Path
 from typing import Any
 
 from ..analyzer import analyses_to_markdown, analyze_item, analyze_items
-from ..briefing_builder import build_daily_briefing, build_daily_briefing_html, SEPARATOR
+from ..briefing_builder import SEPARATOR, build_daily_briefing, build_daily_briefing_html
 from ..config_loader import ROOT
 from ..delivery_trace import effective_delivery_config
 from ..email_delivery import send_email
 from ..email_render import build_combined_email_html, md_to_html, md_to_plain
-from ..run_log import read_last_entry
 from ..evidence_fetcher import batch_fetch, fetch_evidence
 from ..feed_fetcher import fetch_from_config, source_inventory
 from ..google_news_enrichment import enrich_google_news_items
-from ..normalizer import normalize_news_items
-from .events import record_event
-from .research import ResearchAdapter
-from .llm_runtime import get_run_hermes_llm
-
-
-from ..market_data import build_market_context
 from ..markdown_writer import write_markdown_artifact
+from ..market_data import build_market_context
 from ..movers import fetch_mover_items, movers_enabled
+from ..normalizer import normalize_news_items
 from ..relevance_ranker import balance_by_country, rank_items
-from ..run_log import append_log, evaluate_fetch_window
+from ..run_log import append_log, evaluate_fetch_window, read_last_entry
 from ..trend_table import build_trend_rows, render_html, render_markdown
+from .events import record_event
+from .llm_runtime import get_run_hermes_llm
+from .research import ResearchAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -757,7 +754,7 @@ def _derive_mainlines(
     Uses the first signal from each analysis as the headline detail,
     producing richer mainlines than bare titles.
     """
-    from ..briefing_builder import _region, _topics, _is_google_news_item
+    from ..briefing_builder import _is_google_news_item, _region, _topics
 
     analysis_by_id = {str(a.get("news_item_id", "")): a for a in analyses}
     mainlines: list[dict[str, Any]] = []
@@ -1282,7 +1279,7 @@ def deliver_email_node(state: dict[str, Any]) -> dict[str, Any]:
             "_phase": "delivered",
         }
 
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime, timedelta, timezone
 
     now = datetime.now(timezone.utc)
     jst = now.astimezone(timezone(timedelta(hours=9)))
@@ -1469,7 +1466,11 @@ __all__ = [
 # receive deadline-aware behavior without changing the underlying adapters.
 from .run_budget import (
     begin_stage as _budget_begin,
+)
+from .run_budget import (
     complete_stage as _budget_complete,
+)
+from .run_budget import (
     should_stop_optional_work as _budget_stop,
 )
 

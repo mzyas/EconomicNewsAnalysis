@@ -12,7 +12,6 @@ import yaml
 from ._version import __version__ as _PKG_VERSION
 from .schema_validation import validate_file
 
-
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SKILL_CONFIG = ROOT / "skill.yaml"
 

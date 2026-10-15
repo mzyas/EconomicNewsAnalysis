@@ -26,7 +26,6 @@ from tools.config_loader import ROOT, load_runtime_config
 from tools.graph.workflow import run_workflow
 from tools.schema_validation import validate_file
 
-
 MODES = {"analyze", "fetch", "briefing", "deliver", "check", "list-sources", "trend"}
 
 

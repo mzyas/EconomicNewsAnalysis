@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from tools.feed_fetcher_core import FeedItem, Source, _parse_pubdate, fetch_all, fetch_rss
 
-
 RSS = b"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel>
 <item>

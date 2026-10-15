@@ -9,9 +9,9 @@ from typing import Any
 import yaml
 
 from ..config_loader import ROOT
+from ..schema_validation import validate_file
 from .models import MarketDataResult, MarketSymbol
 from .registry import get_market_data_provider
-from ..schema_validation import validate_file
 
 
 def _load_mapping(path: Path) -> dict[str, Any]:

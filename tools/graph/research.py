@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from .prompts import (
     ANALYSIS_PROMPT,
@@ -53,7 +53,7 @@ def _format_source_context(source_context: dict[str, Any]) -> str:
     return "\n".join(parts) if parts else str(source_context)
 
 
-def _safe_parse_json(text: str) -> Optional[dict[str, Any]]:
+def _safe_parse_json(text: str) -> dict[str, Any] | None:
     """Try to parse a JSON object from LLM output.
 
     Handles models that wrap the JSON in ```json ... ``` fences.

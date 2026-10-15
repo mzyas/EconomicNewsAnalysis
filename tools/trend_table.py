@@ -14,10 +14,8 @@ Two asset types are supported:
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
 from typing import Any
-
 
 # ── Direction thresholds ────────────────────────────────────────────────
 

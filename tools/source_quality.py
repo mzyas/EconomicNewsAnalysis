@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 
-
 SUBSTANTIVE_PATTERNS = (
     r"\b(?:rate|inflation|growth|employment|wage|gdp|cpi|ppi|pce|yield|forecast|decision)\b",
     r"(?:利率|通胀|增长|就业|工资|国内生产总值|收益率|预测|决定|同比|环比)",

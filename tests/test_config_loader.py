@@ -1,7 +1,7 @@
 import os
+import tempfile
 import unittest
 from pathlib import Path
-import tempfile
 from unittest.mock import patch
 
 from tools._version import __version__ as PKG_VERSION

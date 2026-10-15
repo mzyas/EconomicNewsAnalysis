@@ -18,7 +18,7 @@ def normalize_news_item(item: dict[str, Any]) -> dict[str, Any]:
     summary = _text(item.get("summary") or item.get("description"))
     item_id = _text(item.get("item_hash") or item.get("id"))
     if not item_id:
-        item_id = hashlib.sha256(f"{title}\n{link}".encode("utf-8")).hexdigest()[:16]
+        item_id = hashlib.sha256(f"{title}\n{link}".encode()).hexdigest()[:16]
 
     tags = item.get("source_tags") or item.get("tags") or []
     if isinstance(tags, str):
