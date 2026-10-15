@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Unified Runtime Skill entrypoint.
 
 This is a thin facade over the LangGraph workflow defined in
@@ -18,9 +17,6 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tools.config_loader import ROOT, load_runtime_config
 from tools.graph.workflow import run_workflow

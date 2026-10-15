@@ -52,10 +52,12 @@ class RuntimeTests(unittest.TestCase):
         completed = subprocess.run(
             [
                 sys.executable,
-                str(ROOT / "tools" / "runtime.py"),
+                "-m",
+                "tools.runtime",
                 "--config",
                 str(ROOT / "examples" / "single_article.yaml"),
             ],
+            cwd=ROOT,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -69,12 +71,14 @@ class RuntimeTests(unittest.TestCase):
         completed = subprocess.run(
             [
                 sys.executable,
-                str(ROOT / "tools" / "runtime.py"),
+                "-m",
+                "tools.runtime",
                 "--config",
                 str(ROOT / "examples" / "single_article.yaml"),
                 "--format",
                 "markdown",
             ],
+            cwd=ROOT,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -144,10 +148,12 @@ class RuntimeTests(unittest.TestCase):
             completed = subprocess.run(
                 [
                     sys.executable,
-                    str(ROOT / "tools" / "runtime.py"),
+                    "-m",
+                    "tools.runtime",
                     "--config",
                     str(bad_config),
                 ],
+                cwd=ROOT,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",

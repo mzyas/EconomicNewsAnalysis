@@ -262,11 +262,11 @@ def build_workflow(checkpoint_path=None, saver=None):
 
 ```bash
 # LangGraph 模式（默认）
-python tools/runtime.py --config examples/daily_briefing.yaml
+python -m tools.runtime --config examples/daily_briefing.yaml
 # 传统模式：无--resume，默认启动新图
 
 # 恢复模式
-python tools/runtime.py --config examples/daily_briefing.yaml --resume
+python -m tools.runtime --config examples/daily_briefing.yaml --resume
 ```
 
 ```
@@ -673,10 +673,10 @@ if resume and run_id and checkpoint_path:
 
 ```bash
 # 新运行
-python tools/runtime.py --config examples/daily_briefing.yaml
+python -m tools.runtime --config examples/daily_briefing.yaml
 
 # 恢复上次运行（相同 run_id）
-python tools/runtime.py --config examples/daily_briefing.yaml --resume
+python -m tools.runtime --config examples/daily_briefing.yaml --resume
 ```
 
 ### 12.4 关键约束
@@ -704,7 +704,7 @@ name: EconomicNewsAnalysis
 version: 0.8.0
 runtime:
   language: python
-  entrypoint: tools/runtime.py
+  entrypoint: tools.runtime
 defaults:
   mode: briefing
   output_language: zh-CN
@@ -764,7 +764,7 @@ hermes cron create \
 cron 运行时，Hermes 会：
 1. 加载 `skill.yaml` 的 defaults
 2. 合并 `--config` 的运行时配置（深度合并）
-3. 调用 `python tools/runtime.py --config <merged_config>`
+3. 调用 `python -m tools.runtime --config <merged_config>`
 4. 将 stdout 的 JSON 结果交付到目标通道
 
 ### 13.4 邮件投递 — Himalaya CLI

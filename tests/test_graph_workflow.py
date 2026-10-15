@@ -725,10 +725,12 @@ class CliCompatibilityTests(unittest.TestCase):
         completed = subprocess.run(
             [
                 sys.executable,
-                str(ROOT / "tools" / "runtime.py"),
+                "-m",
+                "tools.runtime",
                 "--config",
                 str(ROOT / "examples" / "single_article.yaml"),
             ],
+            cwd=ROOT,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -745,12 +747,14 @@ class CliCompatibilityTests(unittest.TestCase):
         completed = subprocess.run(
             [
                 sys.executable,
-                str(ROOT / "tools" / "runtime.py"),
+                "-m",
+                "tools.runtime",
                 "--config",
                 str(ROOT / "examples" / "single_article.yaml"),
                 "--run-id",
                 "cli-test-run",
             ],
+            cwd=ROOT,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -764,13 +768,15 @@ class CliCompatibilityTests(unittest.TestCase):
         completed = subprocess.run(
             [
                 sys.executable,
-                str(ROOT / "tools" / "runtime.py"),
+                "-m",
+                "tools.runtime",
                 "--config",
                 str(ROOT / "examples" / "single_article.yaml"),
                 "--run-id",
                 "resumed-run",
                 "--resume",
             ],
+            cwd=ROOT,
             capture_output=True,
             text=True,
             encoding="utf-8",
