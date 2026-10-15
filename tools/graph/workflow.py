@@ -413,6 +413,132 @@ def _close_saver(compiled: Any) -> None:
                 pass
 
 
+def _prepare_run_config(
+    config: dict[str, Any],
+    mode: str | None,
+    hermes_llm: Any | None,
+    model_routes: dict[str, dict[str, Any]] | None,
+    strict_model_routes: bool,
+) -> tuple[dict[str, Any], str, Any | None]:
+    """Return ``(config, effective_mode, injected_llm)`` with the graph settings applied."""
+    effective_mode = mode or config.get("mode", "briefing")
+    config = dict(config)
+    config["mode"] = effective_mode
+
+    # ``ctx.llm`` is a live Hermes facade and must not enter checkpointed
+    # config.  Routes are plain plugin settings and are safe to checkpoint.
+    graph_cfg = dict(config.get("graph") or {})
+    injected_llm = hermes_llm or graph_cfg.pop("_hermes_llm", None)
+    graph_cfg.pop("_credential_provider", None)
+    if model_routes is not None:
+        graph_cfg["model_routes"] = dict(model_routes)
+    graph_cfg.setdefault("model_routes", {})
+    graph_cfg["strict_model_routes"] = strict_model_routes
+    config["graph"] = graph_cfg
+    return config, effective_mode, injected_llm
+
+
+def _initial_or_resumed_state(
+    config: dict[str, Any],
+    effective_mode: str,
+    run_id: str | None,
+    resume: bool,
+    checkpoint_path: str | None,
+) -> dict[str, Any]:
+    """Load the checkpointed state when resuming, otherwise start a fresh one."""
+    state: dict[str, Any]
+    if resume and run_id and checkpoint_path:
+        loaded = load_latest_state(checkpoint_path, run_id)
+        if loaded:
+            state = dict(loaded)
+            state["config"] = config
+            state["mode"] = effective_mode
+        else:
+            state = initial_state(config, run_id=run_id)
+    else:
+        state = initial_state(config, run_id=run_id)
+
+    return state
+
+
+def _thread_config(graph_cfg: dict[str, Any], thread_id: str) -> dict[str, Any]:
+    """LangGraph run config with the superstep cap and the checkpoint thread id."""
+    # Cap supersteps as a runaway backstop. The longest legitimate path (deliver
+    # mode) is ~13 nodes + 3 per quality-gate retry, so a margin above
+    # ``13 + 3 * max_quality_retries`` allows real runs while aborting any
+    # unexpected cycle far below LangGraph's default of 25. Configurable via
+    # ``graph.recursion_limit``.
+    max_retries = int(graph_cfg.get("max_quality_retries", 1))
+    recursion_limit = int(graph_cfg.get("recursion_limit", 16 + 4 * max(1, max_retries)))
+    thread_config = {
+        "recursion_limit": recursion_limit,
+        "configurable": {
+            "thread_id": thread_id,
+            "checkpoint_ns": "",
+        },
+    }
+
+    return thread_config
+
+
+def _invoke_graph(
+    graph: Any, state: dict[str, Any], thread_id: str, thread_config: dict[str, Any]
+) -> dict[str, Any]:
+    """Run the graph; a failure becomes a failed final state instead of raising."""
+    try:
+        try:
+            final_state = graph.invoke(state, config=thread_config)
+        except Exception as exc:
+            logger.exception("graph invocation failed")
+            final_state = dict(state)
+            final_state["errors"] = list(final_state.get("errors", [])) + [
+                {"type": type(exc).__name__, "message": str(exc)}
+            ]
+            final_state["pipeline_status"] = "failed"
+    finally:
+        clear_run_hermes_llm(thread_id)
+        _close_saver(graph)
+
+    return final_state
+
+
+def _prune_checkpoints_quietly(checkpoint_path: str | None, graph_cfg: dict[str, Any]) -> None:
+    """Bound checkpoint-DB growth after a run."""
+    # Bound checkpoint-DB growth: each run is one thread that is never reclaimed,
+    # so without pruning the SQLite file grows without limit. Keep only the most
+    # recent threads (enough to ``resume`` a recent run). Best-effort — a prune
+    # failure must never fail an otherwise-successful run.
+    if checkpoint_path:
+        keep_last = int(graph_cfg.get("checkpoint_keep_last", 20))
+        try:
+            prune_checkpoints(checkpoint_path, keep_last)
+        except Exception:
+            logger.exception("checkpoint prune failed")
+
+
+def _finalize_state(
+    final_state: dict[str, Any], state: dict[str, Any], effective_mode: str
+) -> None:
+    """Fill mode / timestamps and resolve a still-``running`` pipeline status in place."""
+    final_state.setdefault("mode", effective_mode)
+    final_state.setdefault("started_at", state.get("started_at", _now_iso()))
+    if not final_state.get("completed_at"):
+        final_state["completed_at"] = _now_iso()
+    if final_state.get("pipeline_status") == "running":
+        if effective_mode in {"briefing", "deliver", "trend"}:
+            briefing = final_state.get("briefing") or {}
+            has_content = _has_valid_markdown(
+                final_state.get("briefing_markdown")
+                or final_state.get("trend_markdown")
+                or (briefing.get("markdown") if isinstance(briefing, dict) else "")
+            )
+            final_state["pipeline_status"] = _pipeline_status(final_state, has_content=has_content)
+        else:
+            final_state["pipeline_status"] = (
+                "partial_success" if final_state.get("errors") else "success"
+            )
+
+
 def run_workflow(
     config: dict[str, Any],
     mode: str | None = None,
@@ -435,96 +561,26 @@ def run_workflow(
     Returns:
         A dict matching ``schemas/runtime_result.schema.json``.
     """
-    effective_mode = mode or config.get("mode", "briefing")
-    config = dict(config)
-    config["mode"] = effective_mode
-
-    # ``ctx.llm`` is a live Hermes facade and must not enter checkpointed
-    # config.  Routes are plain plugin settings and are safe to checkpoint.
-    graph_cfg = dict(config.get("graph") or {})
-    injected_llm = hermes_llm or graph_cfg.pop("_hermes_llm", None)
-    graph_cfg.pop("_credential_provider", None)
-    if model_routes is not None:
-        graph_cfg["model_routes"] = dict(model_routes)
-    graph_cfg.setdefault("model_routes", {})
-    graph_cfg["strict_model_routes"] = strict_model_routes
-    config["graph"] = graph_cfg
+    config, effective_mode, injected_llm = _prepare_run_config(
+        config, mode, hermes_llm, model_routes, strict_model_routes
+    )
     checkpoint_path = _resolve_checkpoint_path(config)
-    state: dict[str, Any]
-    if resume and run_id and checkpoint_path:
-        loaded = load_latest_state(checkpoint_path, run_id)
-        if loaded:
-            state = dict(loaded)
-            state["config"] = config
-            state["mode"] = effective_mode
-        else:
-            state = initial_state(config, run_id=run_id)
-    else:
-        state = initial_state(config, run_id=run_id)
+    state = _initial_or_resumed_state(config, effective_mode, run_id, resume, checkpoint_path)
 
     graph = build_workflow(checkpoint_path=checkpoint_path)
     thread_id = str(state.get("run_id", ""))
     # Hand the facade to nodes only for the duration of this run.
     if injected_llm is not None:
         set_run_hermes_llm(thread_id, injected_llm)
-    # Cap supersteps as a runaway backstop. The longest legitimate path (deliver
-    # mode) is ~13 nodes + 3 per quality-gate retry, so a margin above
-    # ``13 + 3 * max_quality_retries`` allows real runs while aborting any
-    # unexpected cycle far below LangGraph's default of 25. Configurable via
-    # ``graph.recursion_limit``.
+
     graph_cfg = config.get("graph", {}) if isinstance(config, dict) else {}
-    max_retries = int(graph_cfg.get("max_quality_retries", 1))
-    recursion_limit = int(graph_cfg.get("recursion_limit", 16 + 4 * max(1, max_retries)))
-    thread_config = {
-        "recursion_limit": recursion_limit,
-        "configurable": {
-            "thread_id": thread_id,
-            "checkpoint_ns": "",
-        },
-    }
+    thread_config = _thread_config(graph_cfg, thread_id)
 
-    try:
-        try:
-            final_state = graph.invoke(state, config=thread_config)
-        except Exception as exc:
-            logger.exception("graph invocation failed")
-            final_state = dict(state)
-            final_state["errors"] = list(final_state.get("errors", [])) + [
-                {"type": type(exc).__name__, "message": str(exc)}
-            ]
-            final_state["pipeline_status"] = "failed"
-    finally:
-        clear_run_hermes_llm(thread_id)
-        _close_saver(graph)
+    final_state = _invoke_graph(graph, state, thread_id, thread_config)
 
-    # Bound checkpoint-DB growth: each run is one thread that is never reclaimed,
-    # so without pruning the SQLite file grows without limit. Keep only the most
-    # recent threads (enough to ``resume`` a recent run). Best-effort — a prune
-    # failure must never fail an otherwise-successful run.
-    if checkpoint_path:
-        keep_last = int(graph_cfg.get("checkpoint_keep_last", 20))
-        try:
-            prune_checkpoints(checkpoint_path, keep_last)
-        except Exception:
-            logger.exception("checkpoint prune failed")
+    _prune_checkpoints_quietly(checkpoint_path, graph_cfg)
 
-    final_state.setdefault("mode", effective_mode)
-    final_state.setdefault("started_at", state.get("started_at", _now_iso()))
-    if not final_state.get("completed_at"):
-        final_state["completed_at"] = _now_iso()
-    if final_state.get("pipeline_status") == "running":
-        if effective_mode in {"briefing", "deliver", "trend"}:
-            briefing = final_state.get("briefing") or {}
-            has_content = _has_valid_markdown(
-                final_state.get("briefing_markdown")
-                or final_state.get("trend_markdown")
-                or (briefing.get("markdown") if isinstance(briefing, dict) else "")
-            )
-            final_state["pipeline_status"] = _pipeline_status(final_state, has_content=has_content)
-        else:
-            final_state["pipeline_status"] = (
-                "partial_success" if final_state.get("errors") else "success"
-            )
+    _finalize_state(final_state, state, effective_mode)
 
     return _write_final_runtime_json(_project_result(final_state, config), config)
 
