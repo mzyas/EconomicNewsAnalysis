@@ -194,19 +194,16 @@ def _derive_mainlines(
     return mainlines
 
 
-def _quality_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
-    """Inspect the briefing for missing pieces and auto-enrich before gate.
-
-    When items lack signals, mainlines, or market_impact, the LLM is
-    called inline to fill them — replacing the external enrichment step.
-    """
-    items = list(state.get("ranked_items") or state.get("items") or [])
-    analyses = list(state.get("analysis", []))
-    config = state.get("config", {}) or {}
-    graph_cfg = config.get("graph", {}) or {}
-    hermes_llm = _resolve_hermes_llm(graph_cfg, state)
-    llm_audit = state.setdefault("llm_audit", [])
-
+def _auto_enrich_signals(
+    state: dict[str, Any],
+    items: list[dict[str, Any]],
+    analyses: list[dict[str, Any]],
+    config: dict[str, Any],
+    graph_cfg: dict[str, Any],
+    hermes_llm: Any,
+    llm_audit: list[dict[str, Any]],
+) -> None:
+    """Fill missing signals inline; updates ``analyses`` and ``state`` in place."""
     # ── Auto-enrich missing signals ─────────────────────────────────────
     # Cover ALL displayed items lacking signals (capped), not just the top 10:
     # items ranked below 10 (e.g. a PBoC release at rank 15) were otherwise
@@ -253,10 +250,20 @@ def _quality_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
         # Re-derive mainlines now that we have more signals
         mainlines = list(state.get("mainlines", []))
         if not mainlines:
-            daily = state.get("daily", {}) or {}
             mainlines = _derive_mainlines(items, analyses)
             state["mainlines"] = mainlines
 
+
+def _derive_briefing_fallbacks(
+    state: dict[str, Any],
+    items: list[dict[str, Any]],
+    analyses: list[dict[str, Any]],
+    config: dict[str, Any],
+    graph_cfg: dict[str, Any],
+    hermes_llm: Any,
+    llm_audit: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], Any]:
+    """Return ``(mainlines, market_impact)``, deriving and persisting them on ``state``."""
     # ── Derive the deterministic briefing fallbacks BEFORE the gate ──────
     # ``mainlines`` and ``daily.market_impact`` are produced by
     # ``build_briefing_node``, which runs AFTER this gate. Without deriving
@@ -284,6 +291,19 @@ def _quality_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
             "market_impact": market_impact,
         }
 
+    return mainlines, market_impact
+
+
+def _synthesize_macro_background(
+    state: dict[str, Any],
+    items: list[dict[str, Any]],
+    analyses: list[dict[str, Any]],
+    config: dict[str, Any],
+    graph_cfg: dict[str, Any],
+    hermes_llm: Any,
+    llm_audit: list[dict[str, Any]],
+) -> tuple[Any, Any]:
+    """Return ``(daily, macro_background)``; ``daily`` is the value read before synthesis."""
     # ── 中美日宏观背景：优先 LLM 合成三段叙述 ─────────────────────────────
     # 留空时 build_briefing_node 会回退到 builder 的确定性（标题归并）版本。
     daily = state.get("daily", {}) or {}
@@ -298,7 +318,44 @@ def _quality_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
                 "macro_background": macro_background,
             }
 
-    # ── Gate check ────────────────────────────────────────────────────
+    return daily, macro_background
+
+
+def _find_untranslated_titles(
+    analyses: list[dict[str, Any]],
+    items: list[dict[str, Any]],
+    important_ids: set[str],
+) -> list[str]:
+    """Ids of important items whose displayed title is still not zh-CN."""
+    # Strict gate: important items whose displayed title is still non-zh-CN
+    # (LLM failed to translate). Unverified Google News discovery items are
+    # exempt — their原文 is intentionally not treated as verified content.
+    from ...briefing_builder import _is_google_news_item, _is_verified_google_item
+
+    item_by_id = {str(i.get("id", "")): i for i in items}
+    untranslated = []
+    for a in analyses:
+        aid = str(a.get("news_item_id", ""))
+        if aid not in important_ids:
+            continue
+        item = item_by_id.get(aid, {})
+        if _is_google_news_item(item) and not _is_verified_google_item(item):
+            continue
+        title = a.get("translated_title") or item.get("translated_title") or item.get("title") or ""
+        if _looks_untranslated(title):
+            untranslated.append(aid)
+
+    return untranslated
+
+
+def _evaluate_gate(
+    state: dict[str, Any],
+    items: list[dict[str, Any]],
+    analyses: list[dict[str, Any]],
+    mainlines: list[dict[str, Any]],
+    market_impact: Any,
+) -> dict[str, Any]:
+    """Check the briefing pieces and return the ``_quality_gate`` record."""
     evidence = list(state.get("_evidence", []))
 
     important_ids = {str(a.get("news_item_id", "")) for a in analyses[:5] if a.get("news_item_id")}
@@ -320,23 +377,7 @@ def _quality_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
         if important_ids.intersection({str(a.get("news_item_id", ""))}) and not a.get("signals")
     ]
 
-    # Strict gate: important items whose displayed title is still non-zh-CN
-    # (LLM failed to translate). Unverified Google News discovery items are
-    # exempt — their原文 is intentionally not treated as verified content.
-    from ...briefing_builder import _is_google_news_item, _is_verified_google_item
-
-    item_by_id = {str(i.get("id", "")): i for i in items}
-    untranslated = []
-    for a in analyses:
-        aid = str(a.get("news_item_id", ""))
-        if aid not in important_ids:
-            continue
-        item = item_by_id.get(aid, {})
-        if _is_google_news_item(item) and not _is_verified_google_item(item):
-            continue
-        title = a.get("translated_title") or item.get("translated_title") or item.get("title") or ""
-        if _looks_untranslated(title):
-            untranslated.append(aid)
+    untranslated = _find_untranslated_titles(analyses, items, important_ids)
 
     mainlines_ok = bool(mainlines) and 1 <= len(mainlines) <= 5
 
@@ -375,6 +416,35 @@ def _quality_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
         "untranslated_titles": sorted(untranslated),
         "checked_at": _now_iso(),
     }
+
+    return gate
+
+
+def _quality_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
+    """Inspect the briefing for missing pieces and auto-enrich before gate.
+
+    When items lack signals, mainlines, or market_impact, the LLM is
+    called inline to fill them — replacing the external enrichment step.
+    """
+    items = list(state.get("ranked_items") or state.get("items") or [])
+    analyses = list(state.get("analysis", []))
+    config = state.get("config", {}) or {}
+    graph_cfg = config.get("graph", {}) or {}
+    hermes_llm = _resolve_hermes_llm(graph_cfg, state)
+    llm_audit = state.setdefault("llm_audit", [])
+
+    _auto_enrich_signals(state, items, analyses, config, graph_cfg, hermes_llm, llm_audit)
+
+    mainlines, market_impact = _derive_briefing_fallbacks(
+        state, items, analyses, config, graph_cfg, hermes_llm, llm_audit
+    )
+
+    daily, macro_background = _synthesize_macro_background(
+        state, items, analyses, config, graph_cfg, hermes_llm, llm_audit
+    )
+
+    gate = _evaluate_gate(state, items, analyses, mainlines, market_impact)
+    passed = gate["passed"]
 
     # Increment on each failure so ``max_quality_retries`` actually bounds the
     # retry loop. The previous ``max(1, ...)`` capped the counter at 1, so any
