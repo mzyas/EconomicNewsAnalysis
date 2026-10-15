@@ -418,7 +418,8 @@ def list_sources(sources: list[Source]) -> None:
 # ── CLI ─────────────────────────────────────────────────────────────────────
 
 
-def main() -> int:
+def _build_parser() -> argparse.ArgumentParser:
+    """The command-line interface."""
     default_config = Path(__file__).resolve().parent.parent / "sources" / "rss_sources.yaml"
 
     parser = argparse.ArgumentParser(
@@ -471,15 +472,11 @@ def main() -> int:
     parser.add_argument(
         "--log", type=Path, help="Log fetch result to JSONL file for tracking fetch history"
     )
-    args = parser.parse_args()
+    return parser
 
-    if not args.source.exists():
-        print(f"Config not found: {args.source}", file=sys.stderr)
-        return 1
 
-    sources = load_config(args.source)
-
-    # Filters
+def _filter_sources(sources: list[Source], args: argparse.Namespace) -> list[Source]:
+    """Apply --country / --tags / --language."""
     if args.country:
         countries = {c.strip().upper() for c in args.country.split(",")}
         sources = [
@@ -491,6 +488,67 @@ def main() -> int:
     if args.language:
         langs = {lang.strip().lower() for lang in args.language.split(",")}
         sources = [s for s in sources if s.language in langs]
+    return sources
+
+
+def _compact_items(results: dict) -> None:
+    """Keep only the summary fields of every item (--compact), in place."""
+    compact = []
+    for item in results["items"]:
+        compact.append(
+            {
+                k: item[k]
+                for k in ["title", "source_name", "link", "published", "summary"]
+                if k in item
+            }
+        )
+    results["items"] = compact
+
+
+def _append_fetch_log(log_path: Path, results: dict) -> None:
+    """Append one JSONL entry about this fetch (--log)."""
+    log_entry = {
+        "fetched_at": results["fetched_at"],
+        "sources_successful": results["sources_successful"],
+        "sources_failed": results["sources_failed"],
+        "total_items": results["total_items"],
+        "failed_ids": [e["id"] for e in results.get("errors", [])],
+    }
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "a") as f:
+        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+
+def _emit_results(args: argparse.Namespace, results: dict, output: str) -> None:
+    """Write the JSON to --output (with a summary) or print it."""
+    if args.output:
+        args.output.write_text(output, encoding="utf-8")
+        error_count = len(results["errors"])
+        skipped_count = len(results["skipped"])
+        print(
+            f"Fetched {results['total_items']} items from "
+            f"{results['sources_successful']} sources → {args.output}"
+        )
+        if error_count:
+            print(f"  {error_count} source(s) failed (see errors in JSON)")
+        if skipped_count:
+            print(f"  {skipped_count} source(s) skipped (official_page/api)")
+    else:
+        print(output)
+
+
+def main() -> int:
+    parser = _build_parser()
+    args = parser.parse_args()
+
+    if not args.source.exists():
+        print(f"Config not found: {args.source}", file=sys.stderr)
+        return 1
+
+    sources = load_config(args.source)
+
+    # Filters
+    sources = _filter_sources(sources, args)
 
     if args.list:
         list_sources(sources)
@@ -506,46 +564,15 @@ def main() -> int:
     )
 
     if args.compact:
-        compact = []
-        for item in results["items"]:
-            compact.append(
-                {
-                    k: item[k]
-                    for k in ["title", "source_name", "link", "published", "summary"]
-                    if k in item
-                }
-            )
-        results["items"] = compact
+        _compact_items(results)
 
     output = json.dumps(results, ensure_ascii=False, indent=2)
 
     # Write log entry if --log specified
     if args.log:
-        log_entry = {
-            "fetched_at": results["fetched_at"],
-            "sources_successful": results["sources_successful"],
-            "sources_failed": results["sources_failed"],
-            "total_items": results["total_items"],
-            "failed_ids": [e["id"] for e in results.get("errors", [])],
-        }
-        args.log.parent.mkdir(parents=True, exist_ok=True)
-        with open(args.log, "a") as f:
-            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        _append_fetch_log(args.log, results)
 
-    if args.output:
-        args.output.write_text(output, encoding="utf-8")
-        error_count = len(results["errors"])
-        skipped_count = len(results["skipped"])
-        print(
-            f"Fetched {results['total_items']} items from "
-            f"{results['sources_successful']} sources → {args.output}"
-        )
-        if error_count:
-            print(f"  {error_count} source(s) failed (see errors in JSON)")
-        if skipped_count:
-            print(f"  {skipped_count} source(s) skipped (official_page/api)")
-    else:
-        print(output)
+    _emit_results(args, results, output)
 
     return 0
 
