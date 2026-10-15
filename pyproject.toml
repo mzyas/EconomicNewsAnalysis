@@ -27,6 +27,7 @@ testpaths = ["tests"]
 packages = [
   "tools",
   "tools.graph",
+  "tools.graph.nodes",
   "tools.market_data",
   "tools.market_data.providers",
 ]

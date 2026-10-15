@@ -128,7 +128,7 @@ class DeliverEmailIdempotencyTests(unittest.TestCase):
                 "delivery_kind": "report_with_attachment",
             }
         )
-        with patch("tools.graph.nodes.send_email") as mock_send:
+        with patch("tools.graph.nodes.delivery.send_email") as mock_send:
             update = deliver_email_node(state)
         mock_send.assert_not_called()
         self.assertTrue(update.get("email_sent"))
@@ -143,7 +143,7 @@ class DeliverEmailIdempotencyTests(unittest.TestCase):
             md_path.write_text("# brief\n\ncontent", encoding="utf-8")
             state = _make_state(output_files={"markdown": str(md_path)})
             with patch(
-                "tools.graph.nodes.send_email",
+                "tools.graph.nodes.delivery.send_email",
                 return_value=DeliveryResult(True, None, attachments=(md_path,)),
             ) as mock_send:
                 update = deliver_email_node(state)
@@ -164,7 +164,7 @@ class DeliverEmailConditionsTests(unittest.TestCase):
             md_path = Path(temp_dir) / "brief.md"
             md_path.write_text("# brief\n\ncontent", encoding="utf-8")
             state = _make_state(config=config, output_files={"markdown": str(md_path)})
-            with patch("tools.graph.nodes.send_email") as mock_send:
+            with patch("tools.graph.nodes.delivery.send_email") as mock_send:
                 update = deliver_email_node(state)
         mock_send.assert_not_called()
         self.assertFalse(update.get("email_sent"))
@@ -176,7 +176,7 @@ class DeliverEmailConditionsTests(unittest.TestCase):
             md_path = Path(temp_dir) / "brief.md"
             md_path.write_text("# brief\n\ncontent", encoding="utf-8")
             state = _make_state(config=config, output_files={"markdown": str(md_path)})
-            with patch("tools.graph.nodes.send_email") as mock_send:
+            with patch("tools.graph.nodes.delivery.send_email") as mock_send:
                 update = deliver_email_node(state)
         mock_send.assert_not_called()
         self.assertFalse(update.get("email_sent"))
@@ -204,7 +204,7 @@ class DeliverEmailConditionsTests(unittest.TestCase):
                 quality_passed=False,
             )
             with patch(
-                "tools.graph.nodes.send_email",
+                "tools.graph.nodes.delivery.send_email",
                 return_value=DeliveryResult(True, None, attachments=(md_path,)),
             ) as mock_send:
                 update = deliver_email_node(state)
@@ -218,7 +218,7 @@ class DeliverEmailConditionsTests(unittest.TestCase):
             md_path.write_text("# brief\n\ncontent", encoding="utf-8")
             state = _make_state(output_files={"markdown": str(md_path)})
             with patch(
-                "tools.graph.nodes.send_email",
+                "tools.graph.nodes.delivery.send_email",
                 return_value=DeliveryResult(False, None, error="Missing email config fields: from"),
             ):
                 update = deliver_email_node(state)
@@ -228,7 +228,7 @@ class DeliverEmailConditionsTests(unittest.TestCase):
     def test_no_markdown_artifact_sends_body_only(self) -> None:
         state = _make_state(output_files={})
         with patch(
-            "tools.graph.nodes.send_email",
+            "tools.graph.nodes.delivery.send_email",
             return_value=DeliveryResult(True, None),
         ) as mock_send:
             update = deliver_email_node(state)
@@ -247,7 +247,7 @@ class DeliveryFallbackContractTests(unittest.TestCase):
             state["output_status"] = "success"
             result = DeliveryResult(True, None, attachments=(markdown,))
 
-            with patch("tools.graph.nodes.send_email", return_value=result) as mock_send:
+            with patch("tools.graph.nodes.delivery.send_email", return_value=result) as mock_send:
                 update = deliver_email_node(state)
 
         self.assertTrue(update["email_sent"])
@@ -262,7 +262,7 @@ class DeliveryFallbackContractTests(unittest.TestCase):
         state["briefing"] = {"markdown": "", "html": "<p>HTML 有效正文</p>"}
         state["pipeline_status"] = "success"
         with patch(
-            "tools.graph.nodes.send_email",
+            "tools.graph.nodes.delivery.send_email",
             return_value=DeliveryResult(True, None),
         ) as mock_send:
             update = deliver_email_node(state)
@@ -275,7 +275,7 @@ class DeliveryFallbackContractTests(unittest.TestCase):
         state = _make_state(output_files={})
         state["briefing"] = {"markdown": "# 日报", "html": "<h1>日报</h1>"}
         with patch(
-            "tools.graph.nodes.send_email",
+            "tools.graph.nodes.delivery.send_email",
             return_value=DeliveryResult(True, None),
         ):
             update = deliver_email_node(state)
@@ -294,7 +294,7 @@ class DeliveryFallbackContractTests(unittest.TestCase):
             state["pipeline_status"] = "success"
             state["output_status"] = "success"
             with patch(
-                "tools.graph.nodes.send_email",
+                "tools.graph.nodes.delivery.send_email",
                 return_value=DeliveryResult(False, None, error="smtp failed"),
             ):
                 update = deliver_email_node(state)
@@ -339,7 +339,7 @@ class DeliverEmailViaWorkflowTests(unittest.TestCase):
             delivery_result = DeliveryResult(True, None)
             with (
                 patch(
-                    "tools.graph.nodes.send_email",
+                    "tools.graph.nodes.delivery.send_email",
                     return_value=delivery_result,
                 ) as mock_send,
                 patch(
@@ -551,7 +551,7 @@ class EndToEndDeliverySmokeTests(unittest.TestCase):
             )
             with (
                 patch(
-                    "tools.graph.nodes.send_email",
+                    "tools.graph.nodes.delivery.send_email",
                     return_value=DeliveryResult(True, None),
                 ) as mock_send,
                 patch(
