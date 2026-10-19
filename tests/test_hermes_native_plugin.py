@@ -70,6 +70,33 @@ class HermesNativePluginTests(TestCase):
         self.assertEqual(json.loads(encoded), expected)
         workflow.assert_called_once_with(ctx, "A rate decision", run_mode="analyze")
 
+    def test_scheduled_modes_return_a_summary_other_modes_the_full_result(self) -> None:
+        plugin = _load_plugin_module()
+        ctx = _Context()
+        plugin.register(ctx)
+        full = {
+            "run_id": "r1",
+            "delivery_status": "success",
+            "items": [{"summary": "x" * 1000}] * 300,
+            "analyses": [{"analysis": "y" * 1000}] * 300,
+            "output_files": {"json": "/out/r1_runtime.json"},
+        }
+        arguments = {
+            "deliver": {"run_mode": "deliver", "profile_config": "daily_email"},
+            "check": {"run_mode": "check", "source_text": "x"},
+            "analyze": {"run_mode": "analyze", "source_text": "x"},
+        }
+
+        with mock.patch.object(plugin, "run_langgraph_workflow", return_value=full):
+            encoded = {mode: ctx.registration["handler"](args) for mode, args in arguments.items()}
+
+        for mode in ("deliver", "check"):
+            self.assertLess(len(encoded[mode]), 20_000)
+            summary = json.loads(encoded[mode])
+            self.assertEqual(summary["result_kind"], "summary")
+            self.assertEqual(summary["full_result_path"], "/out/r1_runtime.json")
+        self.assertEqual(json.loads(encoded["analyze"]), full)
+
     def test_registers_bundled_skill(self) -> None:
         plugin = _load_plugin_module()
         ctx = _Context()

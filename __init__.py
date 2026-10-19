@@ -31,6 +31,15 @@ def run_langgraph_workflow(
     )
 
 
+def _tool_result(result: dict[str, Any], run_mode: str) -> dict[str, Any]:
+    """Scheduled modes return a compact summary; the full result is in the output JSON."""
+    if __package__:
+        from .tools.result_summary import SUMMARY_MODES, summarize_result
+    else:  # pragma: no cover - direct local import compatibility
+        from tools.result_summary import SUMMARY_MODES, summarize_result
+    return summarize_result(result) if run_mode in SUMMARY_MODES else result
+
+
 _RUN_LANGGRAPH_WORKFLOW_DESCRIPTION = (
     "Analyze economic news through the LangGraph workflow using "
     "Hermes-managed LLM routing. Daily delivery uses a fixed profile."
@@ -89,7 +98,7 @@ def _make_workflow_handler(ctx: Any):
         if profile_config is not None:
             workflow_args["profile_config"] = profile_config
         result = run_langgraph_workflow(ctx, source_text, **workflow_args)
-        return json.dumps(result, ensure_ascii=False)
+        return json.dumps(_tool_result(result, run_mode), ensure_ascii=False)
 
     return handler
 

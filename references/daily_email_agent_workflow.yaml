@@ -59,6 +59,8 @@ preflight_checklist:
   step3_真发:
     - '在 Hermes 里由 Cron 调用 run_langgraph_workflow，参数 {"run_mode": "deliver", "profile_config": "daily_email"}
       （部署副本里已补齐收件人并设 send: true；仓库里的模板是 send: false）'
+    - deliver / check 的工具返回值是几 KB 的精简摘要（result_kind: summary，状态字段在最前，含 full_result_path）；
+      完整的 items / analyses / briefing_markdown 在 output_files.json 指向的 <run_id>_runtime.json 里
     - 出现 "Message successfully sent!"（himalaya 成功标志）
     - 结果里没有「邮件发送失败」告警，且 pipeline_status 不是 partial_success（若是，看 _quality_gate.issues）
   step4_收件核对:
