@@ -74,7 +74,7 @@ preflight_checklist:
     - 页脚「自动生成」仅一次；邮件正文整体居中
   排错:
     - 跑不通/异常：先跑 python -m tools.workflow_smoke 定位；看 logs/workflow_smoke.jsonl
-    - 超时：调 graph.llm_concurrency（默认 4，注意供应商限频）或加长 Hermes 调用超时
+    - 超时：调 graph.llm_concurrency（默认 12，供应商限频时调低）或加长 Hermes 调用超时
     - 空转/循环：max_quality_retries:2 + recursion_limit:20 已兜底；超限以 GraphRecursionError → status:failed 终止
     - 发不出但内容正常：检查 himalaya 账户/凭证、email.from 是否匹配账户、网络
     - LLM 不可用：命令行没有 ctx.llm；改用 Hermes 插件运行，并看返回的 llm_audit 里每个节点实际用的 provider/model
