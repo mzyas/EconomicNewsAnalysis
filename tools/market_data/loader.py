@@ -100,7 +100,7 @@ def build_market_context(config: dict[str, Any]) -> dict[str, Any]:
                     if item["id"] not in known:
                         known.add(item["id"])
                         symbols.append(_market_symbol_from_mapping(item))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - logged and reported in the result errors
                 logger.warning("watchlist config error path=%s", watchlist_path, exc_info=True)
                 watchlist_errors.append(
                     {"type": "WatchlistConfigError", "message": f"{watchlist_path}: {exc}"}

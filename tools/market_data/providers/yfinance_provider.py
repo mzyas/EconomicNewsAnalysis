@@ -36,7 +36,7 @@ class YFinanceProvider:
                     interval=interval,
                 )
                 snapshots.append(self._snapshot_from_history(symbol, history, period, interval))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - logged and returned as a failed snapshot
                 logger.warning("market snapshot failed symbol=%s", symbol.id, exc_info=True)
                 snapshots.append(self._failed(symbol, period, interval, str(exc)))
         return snapshots
@@ -150,7 +150,7 @@ class YFinanceProvider:
             extended = close.copy()
             extended.loc[latest_session] = float(iclose.iloc[-1])
             return extended.sort_index()
-        except Exception:
+        except Exception:  # noqa: BLE001 - logged at debug; the daily series is kept
             logger.debug("intraday splice skipped ticker=%s", ticker, exc_info=True)
             return close
 

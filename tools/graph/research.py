@@ -201,7 +201,7 @@ class ResearchAdapter:
                 parsed_retry = _safe_parse_json(raw_retry)
                 if parsed_retry and parsed_retry.get("signals"):
                     parsed, raw = parsed_retry, raw_retry
-            except Exception:
+            except Exception:  # noqa: BLE001 - logged with traceback; the first parse is kept
                 logger.warning("research analyze retry failed title=%s", title, exc_info=True)
 
         parsed = parsed or {}
