@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
+
+_SKILL_DESCRIPTION = (
+    "Run the economic-news LangGraph workflow for supplied text or a scheduled briefing."
+)
 
 
 def run_langgraph_workflow(
@@ -98,4 +103,21 @@ def register(ctx: Any) -> None:
         handler=_make_workflow_handler(ctx),
         description=_RUN_LANGGRAPH_WORKFLOW_DESCRIPTION,
         emoji="📰",
+    )
+    _register_skill(ctx)
+
+
+def _register_skill(ctx: Any) -> None:
+    """Expose the bundled SKILL.md as ``EconomicNewsAnalysis:EconomicNewsAnalysis``.
+
+    Hermes does not discover skills inside a plugin directory on its own; they
+    must be registered. Hosts without ``register_skill`` simply skip it.
+    """
+    register_skill = getattr(ctx, "register_skill", None)
+    if register_skill is None:
+        return
+    register_skill(
+        "EconomicNewsAnalysis",
+        Path(__file__).resolve().parent / "skills" / "EconomicNewsAnalysis" / "SKILL.md",
+        description=_SKILL_DESCRIPTION,
     )
