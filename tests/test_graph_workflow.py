@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import contextvars
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from typing import Any
@@ -324,6 +326,43 @@ class AnalyzeWithLlmNodeTests(unittest.TestCase):
         update = analyze_with_llm_node(state)
         self.assertTrue(update["analysis"][0]["requires_agent_enrichment"])
         self.assertIn("boom", update["analysis"][0]["error"])
+
+    def test_worker_threads_inherit_callers_context(self) -> None:
+        # Hermes keeps the profile secret scope in a contextvar; the per-item
+        # LLM calls run in pool threads and must still see the caller's value.
+        scope: contextvars.ContextVar[str] = contextvars.ContextVar("scope", default="unset")
+        seen: list[tuple[str, str]] = []
+
+        class _ScopedLlm:
+            def invoke(self, prompt: str) -> str:
+                seen.append((threading.current_thread().name, scope.get()))
+                return json.dumps(
+                    {
+                        "analysis": "ok",
+                        "signals": ["s"],
+                        "focus_assets": [],
+                        "translated_title": "宏观",
+                    }
+                )
+
+        state = _state()
+        state["ranked_items"] = [
+            {"id": str(n), "title": f"Macro {n}", "summary": "S", "relevance_score": 0.9}
+            for n in range(6)
+        ]
+        state["config"]["graph"]["_fake_llm"] = _ScopedLlm()
+        state["config"]["graph"]["llm_concurrency"] = 3
+
+        token = scope.set("profile-v1")
+        try:
+            update = analyze_with_llm_node(state)
+        finally:
+            scope.reset(token)
+
+        self.assertEqual(len(seen), 6)
+        self.assertEqual({value for _, value in seen}, {"profile-v1"})
+        self.assertTrue(any(name != threading.main_thread().name for name, _ in seen))
+        self.assertFalse(any(a["requires_agent_enrichment"] for a in update["analysis"]))
 
 
 class QualityGateNodeTests(unittest.TestCase):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextvars
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -226,10 +227,21 @@ def _analyze_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
     # which is the main lever against the 300s delivery timeout. Order is
     # preserved by ``executor.map``. Concurrency is configurable and falls
     # back to a conservative default that stays well under provider limits.
+    # Each task runs in its own copy of the caller's context: Hermes keeps the
+    # profile secret scope in contextvars, which worker threads do not inherit,
+    # so without this every ``ctx.llm`` call in a worker raises UnscopedSecretError
+    # on a multiplexed gateway. One ``Context`` cannot be entered by two threads
+    # at once, hence one copy per item, taken here in the scoped calling thread.
     concurrency = max(1, int(graph_cfg.get("llm_concurrency", 4)))
     if items and concurrency > 1:
+        contexts = [contextvars.copy_context() for _ in items]
         with ThreadPoolExecutor(max_workers=min(concurrency, len(items))) as pool:
-            analyses: list[dict[str, Any]] = list(pool.map(_analyze_one, items))
+            analyses: list[dict[str, Any]] = list(
+                pool.map(
+                    lambda pair: pair[0].run(_analyze_one, pair[1]),
+                    zip(contexts, items, strict=True),
+                )
+            )
     else:
         analyses = [_analyze_one(item) for item in items]
 
