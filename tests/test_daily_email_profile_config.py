@@ -60,15 +60,17 @@ class DailyEmailProfileConfigTests(TestCase):
         with self.assertRaisesRegex(ValueError, "requires profile_config"):
             ctx.registration["handler"]({"run_mode": "deliver"})
 
-        expected = {"status": "success", "llm_audit": []}
-        with mock.patch.object(plugin, "run_langgraph_workflow", return_value=expected) as workflow:
+        full = {"run_id": "r1", "delivery_status": "success", "llm_audit": []}
+        with mock.patch.object(plugin, "run_langgraph_workflow", return_value=full) as workflow:
             result = json.loads(
                 ctx.registration["handler"](
                     {"run_mode": "deliver", "profile_config": "daily_email"}
                 )
             )
 
-        self.assertEqual(result, expected)
+        self.assertEqual(result["result_kind"], "summary")
+        self.assertEqual(result["run_id"], "r1")
+        self.assertEqual(result["delivery_status"], "success")
         workflow.assert_called_once_with(ctx, "", run_mode="deliver", profile_config="daily_email")
 
     def test_profile_file_must_resolve_inside_project_root(self) -> None:

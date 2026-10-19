@@ -58,6 +58,10 @@ The graph never creates provider clients or reads API keys. The Hermes plugin en
   inherits the model selected for the Cron's main Agent.
 - Each completion records its resolved `{node, provider, model}` in the result's
   `llm_audit`. With strict routing enabled, an explicit route mismatch fails.
+- The `deliver` and `check` modes return a compact summary (`result_kind: "summary"`: status
+  fields, aggregated `errors` / `llm_audit` / `analyses` counts, `run_summary`) instead of the full
+  payload. The full result is the `<run_id>_runtime.json` file named by `full_result_path`; other
+  modes return the full result.
 
 The plugin configuration, not this skill, must grant narrow override permissions:
 
