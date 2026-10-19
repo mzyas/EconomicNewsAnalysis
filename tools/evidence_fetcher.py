@@ -117,7 +117,7 @@ def fetch_evidence(url: str, timeout: int = REQUEST_TIMEOUT) -> dict[str, Any]:
     finally:
         try:
             response.close()
-        except Exception:
+        except Exception:  # noqa: BLE001 - logged with traceback; closing is best effort
             logger.debug("closing the response failed url=%s", url, exc_info=True)
 
 
