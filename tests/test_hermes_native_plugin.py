@@ -33,9 +33,13 @@ class _Context:
     def __init__(self) -> None:
         self.llm = SimpleNamespace()
         self.registration: dict | None = None
+        self.skills: list[dict] = []
 
     def register_tool(self, **kwargs) -> None:
         self.registration = kwargs
+
+    def register_skill(self, name, path, description="", frontmatter=None) -> None:
+        self.skills.append({"name": name, "path": Path(path), "description": description})
 
 
 class HermesNativePluginTests(TestCase):
@@ -49,12 +53,13 @@ class HermesNativePluginTests(TestCase):
         assert ctx.registration is not None
         self.assertEqual(ctx.registration["name"], "run_langgraph_workflow")
         self.assertEqual(ctx.registration["toolset"], "EconomicNewsAnalysis")
-        self.assertEqual(ctx.registration["schema"]["required"], [])
+        parameters = ctx.registration["schema"]["parameters"]
+        self.assertEqual(parameters["required"], [])
         self.assertEqual(
-            ctx.registration["schema"]["properties"]["profile_config"]["enum"],
+            parameters["properties"]["profile_config"]["enum"],
             ["daily_email"],
         )
-        self.assertFalse(ctx.registration["schema"]["additionalProperties"])
+        self.assertFalse(parameters["additionalProperties"])
 
         expected = {"status": "success", "llm_audit": []}
         with mock.patch.object(plugin, "run_langgraph_workflow", return_value=expected) as workflow:
@@ -64,6 +69,28 @@ class HermesNativePluginTests(TestCase):
 
         self.assertEqual(json.loads(encoded), expected)
         workflow.assert_called_once_with(ctx, "A rate decision", run_mode="analyze")
+
+    def test_registers_bundled_skill(self) -> None:
+        plugin = _load_plugin_module()
+        ctx = _Context()
+
+        plugin.register(ctx)
+
+        self.assertEqual(len(ctx.skills), 1)
+        skill = ctx.skills[0]
+        self.assertEqual(skill["name"], "EconomicNewsAnalysis")
+        self.assertEqual(skill["path"], ROOT / "skills" / "EconomicNewsAnalysis" / "SKILL.md")
+        self.assertTrue(skill["path"].is_file())
+        self.assertIn(f"description: {skill['description']}", skill["path"].read_text("utf-8"))
+
+    def test_register_tolerates_hosts_without_register_skill(self) -> None:
+        plugin = _load_plugin_module()
+        ctx = _Context()
+        ctx.register_skill = None  # type: ignore[assignment]
+
+        plugin.register(ctx)
+
+        self.assertIsNotNone(ctx.registration)
 
     def test_manifest_declares_only_the_workflow_tool(self) -> None:
         manifest = (ROOT / "plugin.yaml").read_text(encoding="utf-8")

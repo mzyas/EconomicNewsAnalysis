@@ -46,7 +46,7 @@ class DailyEmailProfileConfigTests(TestCase):
         plugin.register(ctx)
         assert ctx.registration is not None
 
-        schema = ctx.registration["schema"]
+        schema = ctx.registration["schema"]["parameters"]
         self.assertEqual(schema["required"], [])
         self.assertEqual(schema["properties"]["profile_config"]["enum"], ["daily_email"])
         self.assertNotIn("config_path", schema["properties"])

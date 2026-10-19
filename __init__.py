@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
+
+_SKILL_DESCRIPTION = (
+    "Run the economic-news LangGraph workflow for supplied text or a scheduled briefing."
+)
 
 
 def run_langgraph_workflow(
@@ -26,26 +31,36 @@ def run_langgraph_workflow(
     )
 
 
+_RUN_LANGGRAPH_WORKFLOW_DESCRIPTION = (
+    "Analyze economic news through the LangGraph workflow using "
+    "Hermes-managed LLM routing. Daily delivery uses a fixed profile."
+)
+
+# Hermes expects a tool schema of the form {"description", "parameters": <JSON Schema>};
+# a bare JSON Schema here leaves the tool with no declared parameters.
 _RUN_LANGGRAPH_WORKFLOW_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "source_text": {
-            "type": "string",
-            "description": "Article or economic-news text to analyze. Required except for daily_email delivery.",
+    "description": _RUN_LANGGRAPH_WORKFLOW_DESCRIPTION,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "source_text": {
+                "type": "string",
+                "description": "Article or economic-news text to analyze. Required except for daily_email delivery.",
+            },
+            "run_mode": {
+                "type": "string",
+                "enum": ["briefing", "deliver", "analyze", "fetch", "check", "trend"],
+                "description": "Existing workflow mode. Defaults to analyze.",
+            },
+            "profile_config": {
+                "type": "string",
+                "enum": ["daily_email"],
+                "description": "Fixed profile for scheduled daily email delivery. No file paths are accepted.",
+            },
         },
-        "run_mode": {
-            "type": "string",
-            "enum": ["briefing", "deliver", "analyze", "fetch", "check", "trend"],
-            "description": "Existing workflow mode. Defaults to analyze.",
-        },
-        "profile_config": {
-            "type": "string",
-            "enum": ["daily_email"],
-            "description": "Fixed profile for scheduled daily email delivery. No file paths are accepted.",
-        },
+        "required": [],
+        "additionalProperties": False,
     },
-    "required": [],
-    "additionalProperties": False,
 }
 
 
@@ -86,9 +101,23 @@ def register(ctx: Any) -> None:
         toolset="EconomicNewsAnalysis",
         schema=_RUN_LANGGRAPH_WORKFLOW_SCHEMA,
         handler=_make_workflow_handler(ctx),
-        description=(
-            "Analyze economic news through the LangGraph workflow using "
-            "Hermes-managed LLM routing. Daily delivery uses a fixed profile."
-        ),
+        description=_RUN_LANGGRAPH_WORKFLOW_DESCRIPTION,
         emoji="📰",
+    )
+    _register_skill(ctx)
+
+
+def _register_skill(ctx: Any) -> None:
+    """Expose the bundled SKILL.md as ``EconomicNewsAnalysis:EconomicNewsAnalysis``.
+
+    Hermes does not discover skills inside a plugin directory on its own; they
+    must be registered. Hosts without ``register_skill`` simply skip it.
+    """
+    register_skill = getattr(ctx, "register_skill", None)
+    if register_skill is None:
+        return
+    register_skill(
+        "EconomicNewsAnalysis",
+        Path(__file__).resolve().parent / "skills" / "EconomicNewsAnalysis" / "SKILL.md",
+        description=_SKILL_DESCRIPTION,
     )
