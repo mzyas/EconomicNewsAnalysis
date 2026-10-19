@@ -49,12 +49,13 @@ class HermesNativePluginTests(TestCase):
         assert ctx.registration is not None
         self.assertEqual(ctx.registration["name"], "run_langgraph_workflow")
         self.assertEqual(ctx.registration["toolset"], "EconomicNewsAnalysis")
-        self.assertEqual(ctx.registration["schema"]["required"], [])
+        parameters = ctx.registration["schema"]["parameters"]
+        self.assertEqual(parameters["required"], [])
         self.assertEqual(
-            ctx.registration["schema"]["properties"]["profile_config"]["enum"],
+            parameters["properties"]["profile_config"]["enum"],
             ["daily_email"],
         )
-        self.assertFalse(ctx.registration["schema"]["additionalProperties"])
+        self.assertFalse(parameters["additionalProperties"])
 
         expected = {"status": "success", "llm_audit": []}
         with mock.patch.object(plugin, "run_langgraph_workflow", return_value=expected) as workflow:
