@@ -97,6 +97,36 @@ class HermesNativePluginTests(TestCase):
             self.assertEqual(summary["full_result_path"], "/out/r1_runtime.json")
         self.assertEqual(json.loads(encoded["analyze"]), full)
 
+    def test_registered_schema_yields_a_model_facing_function_definition(self) -> None:
+        # Hermes' ToolRegistry reads schema["parameters"] and builds the model-facing
+        # definition as {"type": "function", "function": {**schema, "name": name}}.
+        # A bare JSON Schema leaves "parameters" missing and the tool without arguments.
+        plugin = _load_plugin_module()
+        ctx = _Context()
+        plugin.register(ctx)
+        assert ctx.registration is not None
+
+        schema = ctx.registration["schema"]
+        self.assertIsInstance(schema.get("parameters"), dict)
+        definition = {
+            "type": "function",
+            "function": {**schema, "name": ctx.registration["name"]},
+        }
+
+        function = definition["function"]
+        self.assertTrue(function["description"].strip())
+        parameters = function["parameters"]
+        self.assertEqual(parameters["type"], "object")
+        self.assertEqual(
+            set(parameters["properties"]), {"source_text", "run_mode", "profile_config"}
+        )
+        self.assertEqual(
+            parameters["properties"]["run_mode"]["enum"],
+            ["briefing", "deliver", "analyze", "fetch", "check", "trend"],
+        )
+        self.assertIn("deliver", parameters["properties"]["profile_config"]["description"])
+        self.assertIn("daily_email", parameters["properties"]["source_text"]["description"])
+
     def test_registers_bundled_skill(self) -> None:
         plugin = _load_plugin_module()
         ctx = _Context()
