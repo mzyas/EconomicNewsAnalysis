@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
 from typing import Any
@@ -363,6 +364,35 @@ class AnalyzeWithLlmNodeTests(unittest.TestCase):
         self.assertEqual({value for _, value in seen}, {"profile-v1"})
         self.assertTrue(any(name != threading.main_thread().name for name, _ in seen))
         self.assertFalse(any(a["requires_agent_enrichment"] for a in update["analysis"]))
+
+    def test_default_llm_concurrency_is_twelve(self) -> None:
+        lock = threading.Lock()
+        active = 0
+        peak = 0
+
+        class _SlowLlm:
+            def invoke(self, prompt: str) -> str:
+                nonlocal active, peak
+                with lock:
+                    active += 1
+                    peak = max(peak, active)
+                time.sleep(0.05)
+                with lock:
+                    active -= 1
+                return json.dumps({"analysis": "ok", "signals": ["s"], "focus_assets": []})
+
+        state = _state()
+        state["ranked_items"] = [
+            {"id": str(n), "title": f"Macro {n}", "summary": "S", "relevance_score": 0.9}
+            for n in range(40)
+        ]
+        state["config"]["graph"].pop("llm_concurrency", None)
+        state["config"]["graph"]["_fake_llm"] = _SlowLlm()
+
+        analyze_with_llm_node(state)
+
+        self.assertGreater(peak, 4)
+        self.assertLessEqual(peak, 12)
 
 
 class QualityGateNodeTests(unittest.TestCase):

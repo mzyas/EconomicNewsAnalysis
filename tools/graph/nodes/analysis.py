@@ -225,14 +225,14 @@ def _analyze_unbudgeted(state: dict[str, Any]) -> dict[str, Any]:
     # The per-item LLM calls are independent and I/O-bound, so running them
     # concurrently turns ~N sequential round-trips into ~N/concurrency,
     # which is the main lever against the 300s delivery timeout. Order is
-    # preserved by ``executor.map``. Concurrency is configurable and falls
-    # back to a conservative default that stays well under provider limits.
+    # preserved by ``executor.map``. Concurrency is configurable via
+    # ``graph.llm_concurrency`` (default 12); lower it if the provider rate-limits.
     # Each task runs in its own copy of the caller's context: Hermes keeps the
     # profile secret scope in contextvars, which worker threads do not inherit,
     # so without this every ``ctx.llm`` call in a worker raises UnscopedSecretError
     # on a multiplexed gateway. One ``Context`` cannot be entered by two threads
     # at once, hence one copy per item, taken here in the scoped calling thread.
-    concurrency = max(1, int(graph_cfg.get("llm_concurrency", 4)))
+    concurrency = max(1, int(graph_cfg.get("llm_concurrency", 12)))
     if items and concurrency > 1:
         contexts = [contextvars.copy_context() for _ in items]
         with ThreadPoolExecutor(max_workers=min(concurrency, len(items))) as pool:
