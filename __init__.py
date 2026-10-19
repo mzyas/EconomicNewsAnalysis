@@ -54,7 +54,11 @@ _RUN_LANGGRAPH_WORKFLOW_SCHEMA = {
         "properties": {
             "source_text": {
                 "type": "string",
-                "description": "Article or economic-news text to analyze. Required except for daily_email delivery.",
+                "description": (
+                    "Article or economic-news text to analyze. Required (non-empty) for every "
+                    "mode except run_mode='deliver' with profile_config='daily_email', where it "
+                    "may be left empty."
+                ),
             },
             "run_mode": {
                 "type": "string",
@@ -64,7 +68,11 @@ _RUN_LANGGRAPH_WORKFLOW_SCHEMA = {
             "profile_config": {
                 "type": "string",
                 "enum": ["daily_email"],
-                "description": "Fixed profile for scheduled daily email delivery. No file paths are accepted.",
+                "description": (
+                    "Fixed profile for scheduled daily email delivery. Required when "
+                    "run_mode='deliver' and not allowed with any other run_mode. "
+                    "No file paths are accepted."
+                ),
             },
         },
         "required": [],
