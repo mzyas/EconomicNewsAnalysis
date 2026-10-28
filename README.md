@@ -12,7 +12,7 @@ over a threshold trigger targeted Google News searches) → **normalize & dedupe
 **rank** (per-section quotas + per-country balance) → **analyze** (Hermes-managed LLM, translation +
 signals) → **quality gate** (strict; auto-enriches and synthesizes lead items, the China/US/Japan
 macro background, and the impact map) → **build briefing** → **write outputs** →
-**deliver** (himalaya email). Runs are checkpointed to SQLite so they can resume.
+**deliver** (email via himalaya or built-in SMTP). Runs are checkpointed to SQLite so they can resume.
 
 ## Modes
 
@@ -100,8 +100,20 @@ override permissions in the Hermes profile.
 
 ## Email delivery
 
-Email is sent through [himalaya](https://github.com/pimalaya/himalaya), which is only
-configured under **WSL (target Hermes profile)** — native Windows cannot send. Before a real send,
+`email.transport` picks how the message leaves; both routes send the same plain-text and HTML
+bodies and attachments:
+
+- `command` (default) — the message is rendered as MML and piped into `email.send_command`,
+  which defaults to [himalaya](https://github.com/pimalaya/himalaya) `template send`. The
+  command's stderr ends up in the delivery error.
+- `smtp` — the built-in standard-library client sends it directly, so no himalaya or WSL is
+  needed (this is the route for native Windows). Configure `email.smtp` (`host`, optional
+  `port`, `security: starttls | ssl`, `username`, which defaults to the `from` address) and give
+  the password through `password_env` (an environment variable name) or `password_file` (an
+  absolute path). The password itself is never accepted in the config. See
+  [`references/smtp-setup.md`](references/smtp-setup.md).
+
+`email.timeout_seconds` (default 120) caps how long either route may take. Before a real send,
 follow the `preflight_checklist` in
 [`references/daily_email_agent_workflow.yaml`](references/daily_email_agent_workflow.yaml). With
 `email.send: false` delivery is skipped: no message is built or sent, and the briefing Markdown is

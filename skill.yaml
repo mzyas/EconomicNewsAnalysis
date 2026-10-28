@@ -5,7 +5,7 @@ description: >
   LangGraph 经济新闻分析与市场背景管道：抓取(RSS/Google/市场数据) → 标准化去重 →
   排序(板块配额 + 中美日国家均衡) → Hermes 托管 LLM 分析 → 质量门(自动合成今日资讯主线 /
   官媒宏观背景中美日 / 市场影响地图) → 简报渲染(财经媒体 / 科技与AI / Google News /
-  热点速览 等板块) → himalaya 邮件投递。亦支持纯确定性市场趋势表(trend mode)。
+  热点速览 等板块) → 邮件投递(himalaya 或内置 SMTP)。亦支持纯确定性市场趋势表(trend mode)。
 runtime:
   language: python
   entrypoint: tools.runtime

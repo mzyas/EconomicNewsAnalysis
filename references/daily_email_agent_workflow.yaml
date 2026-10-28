@@ -26,7 +26,7 @@ steps:
         不得提交或写入仓库。
   - id: deliver
     # 一步到位：抓取 -> 标准化/去重 -> 排序 -> LLM 分析 -> 质量门（自动补信号、
-    # 合成主线与市场影响地图）-> 生成简报 -> 写出 md/json -> 构建邮件 -> himalaya 发信。
+    # 合成主线与市场影响地图）-> 生成简报 -> 写出 md/json -> 构建邮件 -> 发信（himalaya 或内置 SMTP）。
     tool: run_langgraph_workflow
     arguments: {"run_mode": "deliver", "profile_config": "daily_email"}
     requires: [prepare_deployed_config]
@@ -38,15 +38,18 @@ guards:
     pipeline_status 为 partial_success，具体问题在 _quality_gate.issues 里（缺少核心信号、
     标题未翻译、主线数量不合规、市场影响字段不全）。
   - 未核验 Google News 链接标记为「Google News 发现链接」，不得标为「发布页」。
-  - himalaya 仅在配好的 WSL/目标 profile 下可发；原生 Windows 无法发信。
+  - 发信方式由 email.transport 决定：command（默认）走 himalaya，需要配好 himalaya 的 WSL/Linux profile；
+    smtp 走内置客户端，原生 Windows 也能发。配置见 references/smtp-setup.md。
 
 # ── 真发前检查清单 ─────────────────────────────────────────────────────────────
-# himalaya 只在 WSL（目标 profile）配置；原生 Windows 无法发信。
+# 按部署副本里的 email.transport 只做对应的那一条发信检查。
 preflight_checklist:
   环境_一次性:
     - 进仓库：cd REPLACE_WITH_REPO_PATH
-    - 重建 Linux venv（原 .venv 是 Windows 版，WSL 用不了）：uv sync
-    - himalaya account list 能列出含 REPLACE_WITH_PRIVATE_EMAIL 的发件账户
+    - WSL：重建 Linux venv（原 .venv 是 Windows 版，WSL 用不了）：uv sync
+    - transport 为 command（默认）时：himalaya account list 能列出含 REPLACE_WITH_PRIVATE_EMAIL 的发件账户
+    - transport 为 smtp 时：部署副本里填好 email.smtp.host；password_env 指向的环境变量或 password_file
+      指向的文件在 Hermes 进程里可读且非空；配置里不写 password 字段
     - LLM 由 Hermes 的 ctx.llm 提供（见 docs/HERMES-FIRST-INSTALL.md），本仓库不再读取任何 API key
   step1_离线冒烟_零成本:
     - uv run python -m tools.workflow_smoke 应输出 6/6 workflows passed、exit 0
@@ -59,9 +62,9 @@ preflight_checklist:
   step3_真发:
     - '在 Hermes 里由 Cron 调用 run_langgraph_workflow，参数 {"run_mode": "deliver", "profile_config": "daily_email"}
       （部署副本里已补齐收件人并设 send: true；仓库里的模板是 send: false）'
-    - deliver / check 的工具返回值是几 KB 的精简摘要（result_kind: summary，状态字段在最前，含 full_result_path）；
-      完整的 items / analyses / briefing_markdown 在 output_files.json 指向的 <run_id>_runtime.json 里
-    - 出现 "Message successfully sent!"（himalaya 成功标志）
+    - 'deliver / check 的工具返回值是几 KB 的精简摘要（result_kind: summary，状态字段在最前，含 full_result_path）；
+      完整的 items / analyses / briefing_markdown 在 output_files.json 指向的 <run_id>_runtime.json 里'
+    - command 方式：出现 "Message successfully sent!"（himalaya 成功标志）；smtp 方式没有这行输出，以下一条为准
     - 结果里没有「邮件发送失败」告警，且 pipeline_status 不是 partial_success（若是，看 _quality_gate.issues）
   step4_收件核对:
     - 主题含 📊，形如「📊 财经消息 日报 YYYY-MM-DD」
@@ -78,5 +81,6 @@ preflight_checklist:
     - 跑不通/异常：先跑 python -m tools.workflow_smoke 定位；看 logs/workflow_smoke.jsonl
     - 超时：调 graph.llm_concurrency（默认 12，供应商限频时调低）或加长 Hermes 调用超时
     - 空转/循环：max_quality_retries:2 + recursion_limit:20 已兜底；超限以 GraphRecursionError → status:failed 终止
-    - 发不出但内容正常：检查 himalaya 账户/凭证、email.from 是否匹配账户、网络
+    - 发不出但内容正常：先看「邮件发送失败:」告警（command 方式带命令的 stderr，smtp 方式带异常类型和服务器回复），
+      再查 himalaya 账户/凭证或 SMTP 密码、email.from 是否匹配账户、网络
     - LLM 不可用：命令行没有 ctx.llm；改用 Hermes 插件运行，并看返回的 llm_audit 里每个节点实际用的 provider/model

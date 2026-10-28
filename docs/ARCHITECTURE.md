@@ -552,7 +552,7 @@ fetch_market_data → _after_market_data → trend_table → _after_trend_table
 | **证据收集** | `evidence_fetcher.py` | requests, beautifulsoup4 |
 | **简报渲染** | `briefing_builder.py`, `markdown_writer.py` | — |
 | **趋势表渲染** | `trend_table.py` | —（纯 Python，无外部依赖） |
-| **邮件投递** | `email_render.py`, `email_delivery.py` | himalaya CLI |
+| **邮件投递** | `email_render.py`, `email_delivery.py`, `smtp_sender.py` | himalaya CLI 或 smtplib（标准库） |
 | **市场数据** | `market_data/` | yfinance |
 | **质量门控** | `graph/nodes/quality.py`（旧版离线补丁工具：`enrichment.py`） | — |
 | **运行日志** | `run_log.py` | JSONL |
@@ -598,7 +598,7 @@ graph.invoke(state)         ← 图执行（16个节点，条件路由）
   │
   │  ── 以下所有模式均执行 ──
   ├── write_outputs         → 文件持久化（JSON + Markdown）
-  ├── deliver_email         → himalaya 发送 MML（trend 模式跳过质量门）
+  ├── deliver_email         → himalaya（MML）或内置 SMTP 发信（trend 模式跳过质量门）
   └── write_run_log         → JSONL 日志（含 item_urls 供去重）
   │
   ▼
@@ -815,16 +815,24 @@ workflows:
 - 命令行入口 `python -m tools.runtime` 仍可用于本地运行，但命令行里没有 Hermes 的 `ctx.llm`，
   LLM 步骤会失败并走降级。每日邮件的编排和真发前检查见 `references/daily_email_agent_workflow.yaml`。
 
-### 13.4 邮件投递 — Himalaya CLI
+### 13.4 邮件投递 — himalaya CLI / 内置 SMTP
 
-`deliver` mode 通过 himalaya CLI 发送 MML（Morning Market Letter）格式邮件：
+`email_render.render_email_bodies` 生成纯文本正文和完整 HTML 文档（含移动端样式与居中卡片），
+两种发信方式共用，发出的邮件内容一致。`email.transport` 选择发信方式：
 
 ```python
-# email_delivery.py
-# 1. 将 Markdown 简报转为 MML（himalaya 兼容格式）
-# 2. 通过 himalaya CLI 发送：
-#    echo "..." | HOME=/home/user himalaya template send --from REPLACE_WITH_PRIVATE_EMAIL ...
+# email_delivery.send_email
+# transport: command（默认）
+#   1. build_mml 把正文与附件拼成 MML（himalaya 兼容格式）
+#   2. send_mml 把 MML 通过 stdin 交给 email.send_command（默认 himalaya template send），
+#      捕获 stderr、受 email.timeout_seconds 限时
+# transport: smtp
+#   1. smtp_sender.build_message 直接构造 EmailMessage（multipart/alternative + 附件），不经过 MML
+#   2. smtp_sender.send_message 用 smtplib 发出（starttls 或 ssl）；
+#      密码只从 email.smtp.password_env / password_file 读取，错误信息里不含密码
 ```
+
+配置细节见 `references/smtp-setup.md`。
 
 ### 13.5 邮件主题自动生成
 

@@ -53,6 +53,29 @@
           "type": "array",
           "items": { "type": "string" },
           "minItems": 1
+        },
+        "transport": {
+          "enum": ["command", "smtp"],
+          "description": "command (default) pipes MML into send_command (himalaya by default); smtp sends with the built-in stdlib client."
+        },
+        "timeout_seconds": {
+          "type": "number",
+          "minimum": 1,
+          "description": "How long one send may take before it fails. Default 120."
+        },
+        "smtp": {
+          "type": "object",
+          "description": "Used when transport is smtp. The password is read from password_env, then password_file; it is never accepted here.",
+          "properties": {
+            "host": { "type": "string", "minLength": 1 },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "security": { "enum": ["starttls", "ssl"] },
+            "username": { "type": "string", "minLength": 1 },
+            "password_env": { "type": "string", "minLength": 1 },
+            "password_file": { "type": "string", "minLength": 1 }
+          },
+          "required": ["host"],
+          "additionalProperties": false
         }
       }
     },
