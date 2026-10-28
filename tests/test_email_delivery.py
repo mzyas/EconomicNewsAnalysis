@@ -1,3 +1,4 @@
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -91,6 +92,53 @@ class EmailDeliveryTests(unittest.TestCase):
         self.assertIsNone(result.error)
         self.assertTrue(any("清理失败" in warning for warning in result.warnings))
         captured["path"].unlink(missing_ok=True)
+
+    def test_send_command_receives_the_mml_on_stdin(self):
+        script = (
+            "import sys; sys.exit(0 if 'Subject: 摘要' in sys.stdin.buffer.read().decode() else 1)"
+        )
+        result = send_email(
+            email_config={
+                "from": "a@b.com",
+                "to": "c@d.com",
+                "send_command": [sys.executable, "-c", script],
+            },
+            subject="摘要",
+            text_body="有效正文",
+        )
+        self.assertTrue(result.sent, result.error)
+
+    def test_send_command_stderr_reaches_the_error(self):
+        script = "import sys; sys.stdin.read(); sys.stderr.write('535 auth failed\\n'); sys.exit(3)"
+        with self.assertLogs("tools.email_delivery", level="ERROR"):
+            result = send_email(
+                email_config={
+                    "from": "a@b.com",
+                    "to": "c@d.com",
+                    "send_command": [sys.executable, "-c", script],
+                },
+                subject="摘要",
+                text_body="有效正文",
+            )
+        self.assertFalse(result.sent)
+        self.assertTrue(
+            result.error.endswith("exited with status 3: 535 auth failed"), result.error
+        )
+
+    def test_send_command_timeout_is_reported(self):
+        with self.assertLogs("tools.email_delivery", level="ERROR"):
+            result = send_email(
+                email_config={
+                    "from": "a@b.com",
+                    "to": "c@d.com",
+                    "send_command": [sys.executable, "-c", "import time; time.sleep(30)"],
+                    "timeout_seconds": 0.5,
+                },
+                subject="摘要",
+                text_body="有效正文",
+            )
+        self.assertFalse(result.sent)
+        self.assertTrue(result.error.endswith("timed out after 0.5s"), result.error)
 
     def test_temporary_mml_creation_failure_is_returned(self):
         with patch(
