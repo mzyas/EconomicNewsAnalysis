@@ -440,18 +440,13 @@ def build_combined_email_html(
 </p>"""
 
 
-def build_mml(
+def render_email_bodies(
     md_path: Path | None,
-    from_addr: str,
-    to_addr: str,
-    subject: str,
-    attach_name: str = None,
     html_body: str | None = None,
     version: str = "",
     text_body: str | None = None,
-    attachments: Sequence[Path] | None = None,
-) -> str:
-    """Build himalaya MML with alternative bodies and optional attachments."""
+) -> tuple[str, str]:
+    """Return the plain-text body and the full HTML document every transport sends."""
     if text_body is None:
         if md_path is None:
             raise ValueError("text_body is required when md_path is not provided")
@@ -472,6 +467,38 @@ def build_mml(
         else f'\n<p style="color: #999; font-size: 12px; margin-top: 30px;">由 Economic News Analysis Runtime v{version} 自动生成</p>'
     )
 
+    html_document = f"""<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+@media only screen and (max-width:600px) {{
+  .ena-body {{ padding: 0 !important; background: #ffffff !important; }}
+  .ena-card {{ padding: 12px !important; border-radius: 0 !important; max-width: 100% !important; }}
+  .ena-trend td, .ena-trend th {{ padding: 5px 3px !important; font-size: 11px !important; }}
+}}
+</style></head>
+<body class="ena-body" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 12px; color: #222; background: #f4f5f7;">
+<div class="ena-card" style="max-width: 860px; margin: 0 auto; background: #ffffff; padding: 18px 18px; border-radius: 6px;">
+{html_body}{runtime_footer}
+</div>
+</body></html>"""
+    return plain_body, html_document
+
+
+def build_mml(
+    md_path: Path | None,
+    from_addr: str,
+    to_addr: str,
+    subject: str,
+    attach_name: str = None,
+    html_body: str | None = None,
+    version: str = "",
+    text_body: str | None = None,
+    attachments: Sequence[Path] | None = None,
+) -> str:
+    """Build himalaya MML with alternative bodies and optional attachments."""
+    plain_body, html_document = render_email_bodies(
+        md_path, html_body=html_body, version=version, text_body=text_body
+    )
+
     resolved_attachments = list(attachments or (() if md_path is None else (md_path,)))
     attachment_parts = []
     for index, attachment in enumerate(resolved_attachments):
@@ -488,19 +515,7 @@ Subject: {subject}
 <#part type=text/plain>
 {plain_body}
 <#part type=text/html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-@media only screen and (max-width:600px) {{
-  .ena-body {{ padding: 0 !important; background: #ffffff !important; }}
-  .ena-card {{ padding: 12px !important; border-radius: 0 !important; max-width: 100% !important; }}
-  .ena-trend td, .ena-trend th {{ padding: 5px 3px !important; font-size: 11px !important; }}
-}}
-</style></head>
-<body class="ena-body" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 12px; color: #222; background: #f4f5f7;">
-<div class="ena-card" style="max-width: 860px; margin: 0 auto; background: #ffffff; padding: 18px 18px; border-radius: 6px;">
-{html_body}{runtime_footer}
-</div>
-</body></html>
+{html_document}
 <#/multipart>
 {attachment_mml}
 <#/multipart>"""
