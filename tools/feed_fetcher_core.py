@@ -383,7 +383,14 @@ def fetch_all(
             items, error = fetch_rss(src, max_per_source, connect_timeout, read_timeout)
 
         if error:
-            results["errors"].append({"id": src.id, "name": src.name, "error": error})
+            results["errors"].append(
+                {
+                    "type": "SourceFetchError",
+                    "source_id": src.id,
+                    "source_name": src.name,
+                    "message": error,
+                }
+            )
             results["sources_failed"] += 1
         else:
             results["items"].extend(asdict(it) for it in items)
@@ -512,7 +519,7 @@ def _append_fetch_log(log_path: Path, results: dict) -> None:
         "sources_successful": results["sources_successful"],
         "sources_failed": results["sources_failed"],
         "total_items": results["total_items"],
-        "failed_ids": [e["id"] for e in results.get("errors", [])],
+        "failed_ids": [e["source_id"] for e in results.get("errors", [])],
     }
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "a") as f:

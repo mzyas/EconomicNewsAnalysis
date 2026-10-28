@@ -65,9 +65,26 @@ def _full_result(*, failing: int = 53, total: int = 53) -> dict[str, Any]:
             [{"node": "quality", "provider": "xiaomi", "model": "mimo"}] * 12
             + [{"node": "market_impact", "provider": "xiaomi", "model": "mimo"}]
         ),
+        # Same shapes and distribution as the producers wrote in a real deliver run.
         "errors": (
-            [{"type": "EvidenceFetchError", "message": "未解析到发布者页面 " + big}] * 140
-            + [{"type": "FetchError", "message": f"boom {n}"} for n in range(7)]
+            [
+                {
+                    "type": "PublisherResolveError",
+                    "id": str(n),
+                    "title": f"title {n}",
+                    "message": "未解析到发布者页面",
+                }
+                for n in range(140)
+            ]
+            + [
+                {
+                    "type": "SourceFetchError",
+                    "source_id": f"s{n}",
+                    "source_name": f"Source {n}",
+                    "message": message,
+                }
+                for n, message in enumerate(["HTTP 403"] * 4 + ["HTTP 404"] * 2 + ["HTTP 429"])
+            ]
         ),
         "warnings": ["质量门控未通过: untranslated_titles"],
         "output_files": {"markdown": "/out/r.md", "json": "/out/run-1_runtime.json"},
@@ -131,11 +148,22 @@ class SummarizeResultTests(unittest.TestCase):
         errors = summarize_result(_full_result())["errors"]
 
         self.assertEqual(errors["total"], 147)
-        self.assertEqual(errors["by_type"], {"EvidenceFetchError": 140, "FetchError": 7})
-        self.assertEqual(errors["top_messages"][0]["count"], 140)
-        self.assertEqual(errors["top_messages"][0]["type"], "EvidenceFetchError")
-        self.assertLessEqual(len(errors["top_messages"]), 5)
+        self.assertEqual(errors["by_type"], {"PublisherResolveError": 140, "SourceFetchError": 7})
+        self.assertEqual(
+            errors["top_messages"],
+            [
+                {"type": "PublisherResolveError", "message": "未解析到发布者页面", "count": 140},
+                {"type": "SourceFetchError", "message": "HTTP 403", "count": 4},
+                {"type": "SourceFetchError", "message": "HTTP 404", "count": 2},
+                {"type": "SourceFetchError", "message": "HTTP 429", "count": 1},
+            ],
+        )
         self.assertEqual(len(errors["first"]), 10)
+
+    def test_sampled_error_messages_are_clipped(self) -> None:
+        entries = [{"type": "FetchError", "message": "x" * 5000}] * 3
+        errors = summarize_result({"errors": entries})["errors"]
+
         self.assertTrue(all(len(e["message"]) <= 300 for e in errors["first"]))
 
     def test_llm_audit_is_aggregated(self) -> None:

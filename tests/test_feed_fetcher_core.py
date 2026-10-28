@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 from tools.feed_fetcher_core import (
     Source,
+    fetch_all,
     fetch_rss,
     fetch_worldbank_api,
     main,
@@ -358,6 +359,26 @@ class FetchWorldBankTests(unittest.TestCase):
         self.assertTrue(error.startswith("Expecting value"), error)
 
 
+class FetchAllTests(unittest.TestCase):
+    def test_failed_source_is_reported_with_type_and_source_label(self):
+        forbidden = urllib.error.HTTPError("https://example.com/rss", 403, "Forbidden", {}, None)
+        with patch(URLOPEN, side_effect=forbidden):
+            results = fetch_all([source()], 5, 1, 1, pause_seconds=0)
+
+        self.assertEqual(results["sources_failed"], 1)
+        self.assertEqual(
+            results["errors"],
+            [
+                {
+                    "type": "SourceFetchError",
+                    "source_id": "s1",
+                    "source_name": "Source One",
+                    "message": "HTTP 403",
+                }
+            ],
+        )
+
+
 CONFIG = """\
 sources:
   - {id: us-fed, name: Fed, type: rss, url: "https://fed/rss", country: US, language: en, tags: [monetary_policy, rates]}
@@ -385,7 +406,14 @@ RESULTS = {
         },
         {"title": "T2", "link": "https://l/2"},
     ],
-    "errors": [{"id": "jp-boj", "name": "BOJ", "error": "HTTP 500"}],
+    "errors": [
+        {
+            "type": "SourceFetchError",
+            "source_id": "jp-boj",
+            "source_name": "BOJ",
+            "message": "HTTP 500",
+        }
+    ],
     "skipped": [{"id": "cn-pbc"}],
 }
 CLEAN_RESULTS = {**RESULTS, "errors": [], "skipped": [], "sources_failed": 0, "sources_skipped": 0}

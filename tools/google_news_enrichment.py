@@ -113,11 +113,13 @@ def enrich_google_news_items(
             message = str(exc)
             discovery["verification_status"] = "unverified"
             discovery["error"] = message
+            # No source/url label: the item is kept, so it is not a missing source.
             errors.append(
                 {
+                    "type": "PublisherResolveError",
                     "id": str(updated.get("id", "")),
-                    "name": str(updated.get("title", "")),
-                    "error": message,
+                    "title": str(updated.get("title", "")),
+                    "message": message,
                 }
             )
         updated["discovery"] = discovery
