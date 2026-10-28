@@ -511,7 +511,20 @@ class BuildBriefingNodeTests(unittest.TestCase):
             }
         ]
         state["analysis"] = [{"news_item_id": "a", "signals": ["inflation"]}]
-        state["errors"] = [{"type": "FetchError", "source_name": "Source A", "message": "timeout"}]
+        state["errors"] = [
+            {
+                "type": "SourceFetchError",
+                "source_id": "a",
+                "source_name": "Source A",
+                "message": "HTTP 403",
+            },
+            {
+                "type": "PublisherResolveError",
+                "id": "g1",
+                "title": "Unresolved headline",
+                "message": "未解析到发布者页面",
+            },
+        ]
         state["skipped_sources"] = [{"source_name": "Source B", "reason": "disabled"}]
 
         update = build_briefing_node(state)
@@ -520,6 +533,8 @@ class BuildBriefingNodeTests(unittest.TestCase):
         self.assertIn("部分成功", update["briefing_markdown"])
         self.assertIn("Source A", update["briefing_markdown"])
         self.assertIn("Source B", update["briefing_markdown"])
+        # A kept-but-unverified Google News item is not a missing source.
+        self.assertNotIn("Unresolved headline", update["briefing_markdown"])
 
 
 class ContentAndPipelineStatusTests(unittest.TestCase):

@@ -65,7 +65,10 @@ class GoogleNewsEnrichmentTests(unittest.TestCase):
         items, errors = enrich_google_news_items([self._item()], 5, 5)
         self.assertEqual(items[0]["discovery"]["verification_status"], "unverified")
         self.assertEqual(len(errors), 1)
-        self.assertIn("blocked", errors[0]["error"])
+        self.assertEqual(errors[0]["type"], "PublisherResolveError")
+        self.assertEqual(errors[0]["id"], "g1")
+        self.assertEqual(errors[0]["title"], "Discovery title")
+        self.assertIn("blocked", errors[0]["message"])
 
 
 if __name__ == "__main__":
